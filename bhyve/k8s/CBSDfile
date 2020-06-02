@@ -1,0 +1,7 @@
+# Install K8S cluster
+MASTER_NUM=1
+WORKERS=2
+
+bhyve_k8s()
+{
+}

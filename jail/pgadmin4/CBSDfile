@@ -1,0 +1,92 @@
+# Install PGADMIN4 jail
+
+# some defaults:
+PG_VER="12"													# install postgres${PG_VER}-client
+PY_VERSION="3.7"												# use python ${PY_VERSION} by default, e.g: 3.7
+PYTHON_CMD="python${PY_VERSION}"										# default python interpreter: python${PY_VERSION}, e.g: python3.7
+PIP_CMD="pip-${PY_VERSION}"											# default pip cmd: pip-${PY_VERSION}, e.g: pip-3.7
+PY_PREFIX=$( echo ${PY_VERSION} | tr -d "." )									# py${PY_PREFIX}-<packages>, e.g: py37-openssl
+PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v4.22/pip/pgadmin4-4.22-py3-none-any.whl"	# pip whl url/source
+
+# pgadmin4 default credential
+PGADMIN_SETUP_EMAIL="root@localhost"
+PGADMIN_SETUP_PASSWORD=admin
+
+quiet=0
+
+jail_pgadmin4()
+{
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+
+	pkg_bootstrap=1
+
+	# install pgadmin4 deps
+	pkglist="postgresql${PG_VER}-client \
+		py${PY_PREFIX}-virtualenv \
+		py${PY_PREFIX}-pip \
+		py${PY_PREFIX}-openssl \
+		py${PY_PREFIX}-cryptography \
+		py${PY_PREFIX}-pyasn1 \
+		py${PY_PREFIX}-werkzeug \
+		py${PY_PREFIX}-ndg_httpsclient \
+		py${PY_PREFIX}-sqlite3"
+}
+
+postcreate_pgadmin4()
+{
+	local _ip
+
+	# execute cmd inside jail
+	jexec jname=${jname} /bin/sh <<EOF
+
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
+set -o errexit
+
+# test for python installed
+if [ ! -x /usr/local/bin/${PYTHON_CMD} ]; then
+	echo "no such python"
+	exit 1
+fi
+if [ ! -x /usr/local/bin/${PIP_CMD} ]; then
+	echo "no such pip"
+	exit 1
+fi
+
+ln -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python
+ln -sf /usr/local/bin/${PIP_CMD} /usr/local/bin/pip
+
+/usr/local/bin/pip install ${PGADMIN4_WHL_URL}
+sed 's:127.0.0.1:0.0.0.0:g' /usr/local/lib/python3.7/site-packages/pgadmin4/config.py > /usr/local/lib/python3.7/site-packages/pgadmin4/config_local.py
+
+set +o errexit
+[ ! -d /var/lib/pgadmin ] && mkdir -p /var/lib/pgadmin
+
+cat > /etc/rc.local <<PGEOF
+#!/bin/sh
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
+export PGADMIN_SETUP_EMAIL="${PGADMIN_SETUP_EMAIL}"
+export PGADMIN_SETUP_PASSWORD="${PGADMIN_SETUP_PASSWORD}"
+/usr/sbin/daemon -f /usr/local/bin/python /usr/local/lib/python3.7/site-packages/pgadmin4/pgAdmin4.py
+PGEOF
+
+EOF
+
+	# turn off unnecessary services
+	sysrc jname=${jname} syslogd_enable="NO"
+	sysrc jname=${jname} cron_enable="NO"
+	sysrc jname=${jname} sendmail_enable="NO"
+	sysrc jname=${jname} sendmail_submit_enable="NO"
+	sysrc jname=${jname} sendmail_outbound_enable="NO"
+	sysrc jname=${jname} sendmail_msp_queue_enable="NO"
+	_ip=$( jget jname=pgadmin4 mode=quiet ip4_addr )
+
+	jrestart ${jname}
+
+	# postmessage
+	cat <<EOF
+	${jname} url          : http://${_ip}:5050
+	${jname} default email: ${PGADMIN_SETUP_EMAIL}
+	${jname} default pass : ${PGADMIN_SETUP_PASSWORD}
+EOF
+}
