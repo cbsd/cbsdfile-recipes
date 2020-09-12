@@ -1,0 +1,96 @@
+# Install phpipam jail
+
+# todo:
+#   set/inherit timezone in php.ini?
+
+quiet=0
+
+my_packages="www/php72-opcache databases/mysql57-server net-mgmt/phpipam www/nginx graphics/php72-gd security/php72-hash"
+
+# use CBSD function to generate random MySQL root/phpipam password
+mysql_root_password=$( random_password_gen )
+mysql_phpipam_password=$( random_password_gen )
+
+jail_phpipam()
+{
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+
+	# install pgadmin4 deps
+	pkglist="${my_packages}"
+
+	pkg_bootstrap=1
+}
+
+postcreate_phpipam()
+{
+	local _ip
+
+	# turn off unnecessary services
+	sysrc jname=${jname} syslogd_enable="NO" \
+		cron_enable="NO" \
+		sendmail_enable="NO" \
+		sendmail_submit_enable="NO" \
+		sendmail_outbound_enable="NO" \
+		sendmail_msp_queue_enable="NO" \
+		nginx_enable="YES" \
+		mysql_enable="YES" \
+		php_fpm_enable="YES"
+
+	# execute cmd inside jail
+	jexec jname=${jname} /bin/sh <<EOF
+
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
+set -o errexit
+
+pkg install -y ${my_packages} || true
+
+service mysql-server start || true
+
+if [ ! -r /root/.mysql_secret ]; then
+	echo "no /root/.mysql_secret"
+	exit 1
+fi
+
+# reset pass
+echo "Reset default mysql password: /root/.mysql_secret"
+mysql -u root -p\`grep -v ^# /root/.mysql_secret | tr -d "\r\n"\` --connect-expired-password <<SEOF
+SET PASSWORD = PASSWORD('${mysql_root_password}');
+SEOF
+
+echo '${mysql_root_password}' > /root/.mysql_secret
+
+echo "Set random mysql password for phpipam (see /usr/local/www/phpipam/config.php)..."
+mysql -u root -p\`grep -v ^# /root/.mysql_secret | tr -d "\r\n"\` <<SEOF
+CREATE DATABASE phpipam;
+GRANT ALL ON phpipam.* TO phpipam@'%' IDENTIFIED BY '${mysql_phpipam_password}';
+FLUSH PRIVILEGES;
+SEOF
+
+	mysql -u root -p\`grep -v ^# /root/.mysql_secret | tr -d "\r\n"\` phpipam < /usr/local/www/phpipam/db/SCHEMA.sql
+
+	mkdir /var/log/php
+	touch /var/log/php/php.err
+	chown -R www:www /var/log/php
+
+EOF
+
+	cp -a nginx.conf ~cbsd/jails-data/${jname}-data/usr/local/etc/nginx
+	set +o xtrace
+	sed s:%%MYSQL_PHPIPAM_PASSWORD%%:${mysql_phpipam_password}:g config.php > ~cbsd/jails-data/${jname}-data/usr/local/www/phpipam/config.php
+	set -o xtrace
+	cp -a php-fpm.conf ~cbsd/jails-data/${jname}-data/usr/local/etc/
+	cp -a php-fpm.d/www.conf ~cbsd/jails-data/${jname}-data/usr/local/etc/php-fpm.d/
+	cp -a php.ini ~cbsd/jails-data/${jname}-data/usr/local/etc/
+
+	ip4_addr=$( jget jname=${jname} mode=quiet ip4_addr )
+
+	service jname=${jname} mode=action php-fpm start || true
+	service jname=${jname} mode=action nginx start || true
+
+	# postmessage
+	cat <<EOF
+	Default user/password is: Admin/ipamadmin
+	${jname} url          : http://${ip4_addr}
+EOF
+}
