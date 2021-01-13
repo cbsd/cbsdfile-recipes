@@ -6,7 +6,7 @@ cbsd jremove ${jname} || true
 # MAIN
 while getopts "v:" opt; do
 	case "${opt}" in
-		c) ver="${OPTARG}" ;;
+		v) ver="${OPTARG}" ;;
 	esac
 	shift $(($OPTIND - 1))
 done
