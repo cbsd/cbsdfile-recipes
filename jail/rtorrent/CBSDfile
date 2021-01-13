@@ -1,0 +1,57 @@
+quiet=0
+
+jail_rtorrent()
+{
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	pkg_bootstrap=1
+}
+
+postcreate_rtorrent()
+{
+	local _ip
+
+	# turn off unnecessary services
+	sysrc jname=${jname} syslogd_enable="NO" \
+		cron_enable="NO" \
+		sendmail_enable="NO" \
+		sendmail_submit_enable="NO"\
+		sendmail_outbound_enable="NO" \
+		sendmail_msp_queue_enable="NO" \
+		syslogd_enable="NO"
+
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+
+	# postmessage
+	set +o errexit  # retcode for iptype
+
+	OIFS="${IFS}"
+	IFS=","
+	for i in ${_ip}; do
+		IFS="${OIFS}"
+		myip=
+		iptype ${i}
+		case $? in
+			1)
+				# ipv4, no cast
+				myip="${i}"
+				;;
+			2)
+				# ipv6, add brackets
+				myip="[${i}]"
+				;;
+			*)
+				# unknown IP type
+				continue
+				;;
+			esac
+
+		cat <<EOF
+  ${jname} url          : http://${_ip}
+EOF
+		IFS=","
+	done
+	IFS="${OIFS}"
+
+	set -o errexit
+}
