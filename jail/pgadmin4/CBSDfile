@@ -65,7 +65,7 @@ sed 's:127.0.0.1:0.0.0.0:g' /usr/local/lib/python3.7/site-packages/pgadmin4/conf
 
 set +o errexit
 [ ! -d /var/lib/pgadmin ] && mkdir -p /var/lib/pgadmin
-
+[ -r /var/lib/pgadmin/pgadmin4.db ] && rm -f /var/lib/pgadmin/pgadmin4.db
 cat > /etc/rc.local <<PGEOF
 #!/bin/sh
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
