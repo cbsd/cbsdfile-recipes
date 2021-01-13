@@ -1,5 +1,5 @@
 # Install PGADMIN4 jail
-
+# todo: switch to rc.d instead of rc.local
 # some defaults:
 PG_VER="12"													# install postgres${PG_VER}-client
 PY_VERSION="3.7"												# use python ${PY_VERSION} by default, e.g: 3.7
