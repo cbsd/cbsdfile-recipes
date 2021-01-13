@@ -1,11 +1,21 @@
 #!/bin/sh
-
+# usage: <mkimg> -v 12.2
 jname="rtorrent"
-
 cbsd jremove ${jname} || true
 
-cbsd up ver=12.2
-#cbsd up ver=13
+# MAIN
+while getopts "v:" opt; do
+	case "${opt}" in
+		c) ver="${OPTARG}" ;;
+	esac
+	shift $(($OPTIND - 1))
+done
+
+if [ -z "${ver}" ]; then
+	echo "give me version, e.g.: -v 12.2"
+	exit 1
+fi
+cbsd up ver=${ver}
 cbsd forms module=rtorrent jname=${jname} debug_form=1
 cbsd jstop ${jname}
 find ~cbsd/jails-data/${jname}-data/tmp/ -type s -delete
