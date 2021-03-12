@@ -14,8 +14,8 @@ jail_gitlab()
 	ipv4_addr="DHCP,DHCPv6"
 	# for fixed address, or overwrite via args: 'cbsd up ip4_addr="1.1.1.1"`:
 	#ip4_addr="1.1.1.1"
-	ip4_addr="144.76.225.238"
-	interface=0
+	#interface=0
+	ver=12.2
 	allow_sysvipc=1
 	allow_raw_sockets=1
 	host_hostname="${jname}.convectix.com"
@@ -69,15 +69,14 @@ EOF
 	jexec chmod 0644 /usr/local/etc/pkg/repos/FreeBSD.conf
 
 	# Install required packages
-	pkg mode=update jname=${jname}
-	pkg mode=install jname=${jname} git postgresql12-contrib postgresql12-server gitlab-ce nginx
-
+	pkg mode=update
+	pkg mode=install git postgresql12-contrib postgresql12-server gitlab-ce nginx
 	# Postgresql setup
 	service mode=action postgresql initdb
 
 	# Allow full access to DB
 	# TODO this needs to be fixed to be more secure
-	jexec jname=${jname} /bin/sh <<EOF
+	jexec /bin/sh <<EOF
 echo "host    all             all             0.0.0.0/0               trust" >> /var/db/postgres/data12/pg_hba.conf
 EOF
 
