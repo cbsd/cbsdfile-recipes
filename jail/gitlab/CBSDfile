@@ -194,7 +194,7 @@ EOF
 		esac
 
 		cat <<EOF
-        ${jname} url          : http://${myip}:3000
+        ${jname} url          : http://${myip}
 EOF
 		IFS=","
 	done
