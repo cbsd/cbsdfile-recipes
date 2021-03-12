@@ -12,15 +12,18 @@ quiet=0
 jail_gitlab()
 {
 	ipv4_addr="DHCP,DHCPv6"
+	imgsize="30g"
 	# for fixed address, or overwrite via args: 'cbsd up ip4_addr="1.1.1.1"`:
 	#ip4_addr="1.1.1.1"
 	#interface=0
-	ver=12.2
+	#ver=12.2
 	allow_sysvipc=1
 	allow_raw_sockets=1
 	host_hostname="${jname}.convectix.com"
 	pkg_bootstrap="1"
 	pkglist="python security/ca_root_nss"
+	# wait for SSH ready
+	ssh_wait=1
 }
 
 postcreate_gitlab()
@@ -53,7 +56,7 @@ postcreate_gitlab()
 	DB_PASSWORD=$( ${HEAD_CMD} -c 30 /dev/random | ${UUENCODE_CMD} -m - | ${TAIL_CMD} -n 2 | ${HEAD_CMD} -n1 )
 
 	# cbsd jexec
-	jexec /bin/sh <<EOF
+	jexec <<EOF
 echo "127.0.0.1:5432:gitlabhq_production:git:${DB_PASSWORD}" > /root/.pgpass
 chmod 0600 /root/.pgpass
 EOF
@@ -76,7 +79,7 @@ EOF
 
 	# Allow full access to DB
 	# TODO this needs to be fixed to be more secure
-	jexec /bin/sh <<EOF
+	jexec <<EOF
 echo "host    all             all             0.0.0.0/0               trust" >> /var/db/postgres/data12/pg_hba.conf
 EOF
 
@@ -84,7 +87,7 @@ EOF
 	service mode=action jname=${jname} postgresql start
 
 	# Setup postgresql database
-	jexec /bin/sh <<EOF
+	jexec <<EOF
 psql -d template1 -U postgres -c "CREATE USER git CREATEDB SUPERUSER;"
 psql -d template1 -U postgres -c "CREATE DATABASE gitlabhq_production OWNER git;"
 psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
@@ -92,7 +95,7 @@ psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS btree
 EOF
 
 	# Redis socket configuration
-	jexec /bin/sh <<EOF
+	jexec <<EOF
 echo "unixsocket /var/run/redis/redis.sock" >> /usr/local/etc/redis.conf
 echo "unixsocketperm 770" >> /usr/local/etc/redis.conf
 EOF
@@ -114,7 +117,7 @@ EOF
 	jexec chmod 0644 /usr/local/etc/nginx/nginx.conf
 
 	# Configure gitconfig
-	jexec /bin/sh <<EOF
+	jexec <<EOF
 su -l git -c "git config --global core.autocrlf input"
 su -l git -c "git config --global gc.auto 0"
 su -l git -c "git config --global repack.writeBitmaps true"
@@ -133,17 +136,17 @@ EOF
 	jexec ln -s /usr/local/www/gitlab-ce/.gitlab_shell_secret /usr/local/share/gitlab-shell/.gitlab_shell_secret
 
 	# Set db password
-	#jexec /bin/sh <<EOF
+	#jexec <<EOF
 #sed -i '' -e 's/\s\spassword: "secure password"/  password: "${DB_PASSWORD}"/g' /usr/local/www/gitlab-ce/config/database.yml
 #EOF
 
 	# Run Gitlab setup
-	jexec /bin/sh <<EOF
+	jexec <<EOF
 yes yes | su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:setup RAILS_ENV=production"
 EOF
 
 	# Update config files
-	jexec /bin/sh <<EOF
+	jexec <<EOF
 # Replace host with our IP
 #sed -i '' -e 's/^.*host: localhost$/    host: 192.168.0.251/g' /usr/local/www/gitlab-ce/config/gitlab.yml
 sed -i '' -e "s/^.*host: localhost$/    host: ${ip4_addr}/g" /usr/local/www/gitlab-ce/config/gitlab.yml
@@ -151,12 +154,12 @@ sed -i '' -e "s/^.*host: localhost$/    host: ${ip4_addr}/g" /usr/local/www/gitl
 sed -i '' -e 's/^.*port: 80 .*$/    port: 10080/g' /usr/local/www/gitlab-ce/config/gitlab.yml
 # gitlab ssh config
 #sed -i '' -e 's/^.*ssh_port: 22$/    ssh_port: 2223/g' /usr/local/www/gitlab-ce/config/gitlab.yml
-# NGINX config
+# NGINX config, IPv6 check?
 sed -i '' -e 's/^.*listen \[::\]:80 default_server;$//g' /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
 EOF
 
 	# Install and Compile assets
-	jexec /bin/sh <<EOF
+	jexec <<EOF
 su -l git -c "cd /usr/local/www/gitlab-ce && yarn install --production --pure-lockfile"
 su -l git -c "cd /usr/local/www/gitlab-ce && RAILS_ENV=production NODE_ENV=production USE_DB=false SKIP_STORAGE_VALIDATION=true NODE_OPTIONS='--max_old_space_size=3584' bundle exec rake gitlab:assets:compile"
 EOF
@@ -169,8 +172,11 @@ EOF
 
 	set +o xtrace
 	# postmessage
-	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+	# todo: learn for API
 	set +o errexit  # retcode for iptype
+
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+	[ $? -ne 0 ] && _ip="${jname}"
 
 	OIFS="${IFS}"
 	IFS=","
@@ -194,7 +200,7 @@ EOF
 		esac
 
 		cat <<EOF
-        ${jname} url          : http://${myip}:3000
+        ${jname} url          : http://${myip}
 EOF
 		IFS=","
 	done
