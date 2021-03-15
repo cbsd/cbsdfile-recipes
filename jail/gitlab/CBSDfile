@@ -1,5 +1,5 @@
-# Uncommend CLOUD_\* vars ro work remote API provider
-# See https://www.bsdstore.ru/en/cbsdfile.html for details
+# Uncomment CLOUD_\* vars to work remote API provider
+# See https://www.bsdstore.ru/en/cbsdfile.html + https://www.bsdstore.ru/en/cbsd_api_ssi.html) for details
 #CLOUD_URL="https://us-sw.api.my.domain"
 #CLOUD_KEY="ssh-ed25519 XXX your@comment"
 
