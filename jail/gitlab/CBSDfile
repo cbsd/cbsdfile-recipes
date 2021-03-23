@@ -7,13 +7,13 @@
 # use alternative ssh port, e.g: 2233
 # default:
 # GITLAB_SSH_PORT=22
-GITLAB_SSH_PORT=22
+GITLAB_SSH_PORT=2233
 
 # use CBSD expose to forward SSH traffic? Useful when GITLAB_SSH_PORT != 22
 # By default: disabled ( GITLAB_SSH_EXPOSE=1 )
 # default:
 # GITLAB_SSH_EXPOSE=0
-GITLAB_SSH_EXPOSE=0
+GITLAB_SSH_EXPOSE=1
 
 quiet=0
 
@@ -199,6 +199,9 @@ EOF
 su -l git -c "cd /usr/local/www/gitlab-ce && yarn install --production --pure-lockfile"
 su -l git -c "cd /usr/local/www/gitlab-ce && RAILS_ENV=production NODE_ENV=production USE_DB=false SKIP_STORAGE_VALIDATION=true NODE_OPTIONS='--max_old_space_size=3584' bundle exec rake gitlab:assets:compile"
 EOF
+
+	# Start ssh
+	service mode=action sshd start
 
 	# Start nginx
 	service mode=action nginx start
