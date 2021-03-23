@@ -1,7 +1,19 @@
-# Uncomment CLOUD_\* vars to work remote API provider
-# See https://www.bsdstore.ru/en/cbsdfile.html + https://www.bsdstore.ru/en/cbsd_api_ssi.html) for details
+# Uncommend CLOUD_\* vars ro work remote API provider
+# See https://www.bsdstore.ru/en/cbsdfile.html for details
 #CLOUD_URL="https://us-sw.api.my.domain"
 #CLOUD_KEY="ssh-ed25519 XXX your@comment"
+
+# Customize gitlab options
+# use alternative ssh port, e.g: 2233
+# default:
+# GITLAB_SSH_PORT=22
+GITLAB_SSH_PORT=22
+
+# use CBSD expose to forward SSH traffic? Useful when GITLAB_SSH_PORT != 22
+# By default: disabled ( GITLAB_SSH_EXPOSE=1 )
+# default:
+# GITLAB_SSH_EXPOSE=0
+GITLAB_SSH_EXPOSE=0
 
 quiet=0
 
@@ -11,19 +23,23 @@ quiet=0
 
 jail_gitlab()
 {
-	ipv4_addr="DHCP,DHCPv6"
-	imgsize="30g"
+	#auto IP
+	#ipv4_addr="DHCP,DHCPv6"
+	ipv4_addr="DHCP"
 	# for fixed address, or overwrite via args: 'cbsd up ip4_addr="1.1.1.1"`:
-	#ip4_addr="1.1.1.1"
-	#interface=0
-	#ver=12.2
+	#ip4_addr="192.168.0.1"
+
+	# set interface=0 when IP not manage by CBSD
+	interface="auto"
+
+	astart=0
+
+	# PgSQL req:
 	allow_sysvipc=1
 	allow_raw_sockets=1
 	host_hostname="${jname}.convectix.com"
 	pkg_bootstrap="1"
 	pkglist="python security/ca_root_nss"
-	# wait for SSH ready
-	ssh_wait=1
 }
 
 postcreate_gitlab()
@@ -31,8 +47,10 @@ postcreate_gitlab()
 	local _ip
 
 	# for expose
-	#expose mode=add in=10080 out=80
-	#expose mode=add in=2223 out=22
+	if [ ${GITLAB_SSH_EXPOSE} -eq 1 ]; then
+		#expose mode=add in=10080 out=80
+		expose mode=add in=${GITLAB_SSH_PORT} out=22
+	fi
 
 	# cbsd sysrc
 	sysrc \
@@ -53,7 +71,10 @@ postcreate_gitlab()
 	#DB_PASSWORD=`${PWGEN_CMD} -cnyB1 -r \\&\\"\\\\\\\\/ 32`
 	# turn off trace when work with passwords
 	set +o xtrace
-	DB_PASSWORD=$( ${HEAD_CMD} -c 30 /dev/random | ${UUENCODE_CMD} -m - | ${TAIL_CMD} -n 2 | ${HEAD_CMD} -n1 )
+	#DB_PASSWORD=$( ${HEAD_CMD} -c 30 /dev/random | ${UUENCODE_CMD} -m - | ${TAIL_CMD} -n 2 | ${HEAD_CMD} -n1 )
+
+	# use CBSD function to generate random password, length=30
+	DB_PASSWORD=$( random_password_gen -l 30 )
 
 	# cbsd jexec
 	jexec <<EOF
@@ -127,6 +148,19 @@ su -l git -c "git config --global core.fsyncObjectFiles true"
 su -l git -c "mkdir -p /usr/local/git/.ssh"
 EOF
 
+	if [ "${GITLAB_SSH_PORT}" != "22" ]; then
+		jexec <<EOF
+su -l git -c "mkdir -p /usr/local/git/.ssh"
+cat > /usr/local/git/.ssh/config <<JEOF
+host ${host_hostname}
+	user git
+	port ${GITLAB_SSH_PORT}
+	hostname 127.0.0.1
+JEOF
+chown git:git /usr/local/git/.ssh/config
+${ECHO} "${N1_COLOR}non-standart ssh port saved in: ${N2_COLOR}/usr/local/git/.ssh/config${N0_COLOR}"
+EOF
+	fi
 	# Copy local ssh config
 	#jscp files/sshconfig ${jname}:/usr/local/git/.ssh/config
 	#jexec jname=${jname} chown git:git /usr/local/git/.ssh/config
@@ -154,8 +188,10 @@ sed -i '' -e "s/^.*host: localhost$/    host: ${ip4_addr}/g" /usr/local/www/gitl
 sed -i '' -e 's/^.*port: 80 .*$/    port: 10080/g' /usr/local/www/gitlab-ce/config/gitlab.yml
 # gitlab ssh config
 #sed -i '' -e 's/^.*ssh_port: 22$/    ssh_port: 2223/g' /usr/local/www/gitlab-ce/config/gitlab.yml
-# NGINX config, IPv6 check?
-sed -i '' -e 's/^.*listen \[::\]:80 default_server;$//g' /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
+# NGINX config
+cp -a /usr/local/www/gitlab-ce/lib/support/nginx/gitlab /usr/local/www/gitlab-ce/lib/support/nginx/gitlab.bak
+sed -i '' -e "s/^.*listen \\\[::\\\]/  # listen [::]:80 default_server;;/g" /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
+#sed -i '' -e 's/^.*listen \[::\]:80 default_server;$//g' /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
 EOF
 
 	# Install and Compile assets
@@ -172,11 +208,8 @@ EOF
 
 	set +o xtrace
 	# postmessage
-	# todo: learn for API
-	set +o errexit  # retcode for iptype
-
 	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
-	[ $? -ne 0 ] && _ip="${jname}"
+	set +o errexit  # retcode for iptype
 
 	OIFS="${IFS}"
 	IFS=","
@@ -205,6 +238,15 @@ EOF
 		IFS=","
 	done
 	IFS="${OIFS}"
+
+	if [ "${GITLAB_SSH_PORT}" != "22" ]; then
+		${ECHO} "  ${N1_COLOR}hint: You may want to use the configuration for an alternative port${N0_COLOR}"
+		${CAT_CMD} <<EOF
+host ${host_hostname}
+	user git
+	port ${GITLAB_SSH_PORT}
+EOF
+	fi
 
 	set -o errexit
 }
