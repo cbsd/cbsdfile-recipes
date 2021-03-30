@@ -10,12 +10,12 @@ mysql_phpipam_password=$( random_password_gen )
 
 jail_phpipam()
 {
-	#ip4_addr="DHCP"
-	ip4_addr="10.0.1.26"
+	ip4_addr="DHCP"
+	#ip4_addr="10.0.1.26"
 	host_hostname="${jname}.my.domain"
-	ver=14
+	ver="native"
 	# install pgadmin4 deps
-#	pkglist="databases/mysql57-server net-mgmt/phpipam www/nginx"
+
 	pkglist="databases/mysql57-server net-mgmt/phpipam php74-opcache graphics/php74-gd php74-iconv php74-dom php74-curl php74-ctype www/nginx"
 
 	# set interface=0 when IP not manage by CBSD
