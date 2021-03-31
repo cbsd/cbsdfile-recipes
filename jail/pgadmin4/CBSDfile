@@ -6,33 +6,35 @@ PY_VERSION="3.7"												# use python ${PY_VERSION} by default, e.g: 3.7
 PYTHON_CMD="python${PY_VERSION}"										# default python interpreter: python${PY_VERSION}, e.g: python3.7
 PIP_CMD="pip-${PY_VERSION}"											# default pip cmd: pip-${PY_VERSION}, e.g: pip-3.7
 PY_PREFIX=$( echo ${PY_VERSION} | tr -d "." )									# py${PY_PREFIX}-<packages>, e.g: py37-openssl
-PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v4.29/pip/pgadmin4-4.29-py3-none-any.whl"	# pip whl url/source
+PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v5.1/pip/pgadmin4-5.1-py3-none-any.whl"	# pip whl url/source
+#PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v4.29/pip/pgadmin4-4.29-py3-none-any.whl"	# pip whl url/source
 
 # pgadmin4 default credential
 PGADMIN_SETUP_EMAIL="root@localhost"
 PGADMIN_SETUP_PASSWORD=admin
 
-# install pgadmin4 deps
-my_packages="postgresql${PG_VER}-client \
-	py${PY_PREFIX}-virtualenv \
-	py${PY_PREFIX}-pip \
-	py${PY_PREFIX}-openssl \
-	py${PY_PREFIX}-cryptography \
-	py${PY_PREFIX}-pyasn1 \
-	py${PY_PREFIX}-werkzeug \
-	py${PY_PREFIX}-ndg-httpsclient \
-	py${PY_PREFIX}-sqlite3"
-
-echo "${my_packages}"
-
 quiet=1
 
 jail_pgadmin4()
 {
-	ip4_addr="DHCP"
+	#ip4_addr="DHCP"
+	ip4_addr="10.0.1.29"
 	host_hostname="${jname}.my.domain"
 	pkg_bootstrap=1
-	pkglist="${my_packages}"
+	ver="native"
+	pkglist="postgresql${PG_VER}-client \
+		py${PY_PREFIX}-virtualenv \
+		py${PY_PREFIX}-pip \
+		py${PY_PREFIX}-openssl \
+		py${PY_PREFIX}-cryptography \
+		py${PY_PREFIX}-pyasn1 \
+		py${PY_PREFIX}-werkzeug \
+		py${PY_PREFIX}-ndg-httpsclient \
+		py${PY_PREFIX}-sqlite3 \
+		rust"
+
+	# rust to build cryptography module
+
 }
 
 postcreate_pgadmin4()
@@ -40,12 +42,10 @@ postcreate_pgadmin4()
 	local _ip
 
 	# execute cmd inside jail
-	jexec jname=${jname} /bin/sh <<EOF
+	jexec <<EOF
 
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
 set -o errexit
-
-pkg install -y ${my_packages} || true
 
 # test for python installed
 if [ ! -x /usr/local/bin/${PYTHON_CMD} ]; then
@@ -63,29 +63,34 @@ ln -sf /usr/local/bin/${PIP_CMD} /usr/local/bin/pip
 /usr/local/bin/pip install ${PGADMIN4_WHL_URL}
 sed 's:127.0.0.1:0.0.0.0:g' /usr/local/lib/python3.7/site-packages/pgadmin4/config.py > /usr/local/lib/python3.7/site-packages/pgadmin4/config_local.py
 
+pkg remove -y rust
+mkdir -p /var/lib/pgadmin
+
 set +o errexit
 [ ! -d /var/lib/pgadmin ] && mkdir -p /var/lib/pgadmin
 [ -r /var/lib/pgadmin/pgadmin4.db ] && rm -f /var/lib/pgadmin/pgadmin4.db
-cat > /etc/rc.local <<PGEOF
-#!/bin/sh
-export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
-export PGADMIN_SETUP_EMAIL="${PGADMIN_SETUP_EMAIL}"
-export PGADMIN_SETUP_PASSWORD="${PGADMIN_SETUP_PASSWORD}"
-/usr/sbin/daemon -f /usr/local/bin/python /usr/local/lib/python3.7/site-packages/pgadmin4/pgAdmin4.py
-PGEOF
-
+[ ! -d /usr/local/etc/rc.d ] && mkdir -p /usr/local/etc/rc.d
 EOF
 
-	# turn off unnecessary services
-	sysrc jname=${jname} syslogd_enable="NO"
-	sysrc jname=${jname} cron_enable="NO"
-	sysrc jname=${jname} sendmail_enable="NO"
-	sysrc jname=${jname} sendmail_submit_enable="NO"
-	sysrc jname=${jname} sendmail_outbound_enable="NO"
-	sysrc jname=${jname} sendmail_msp_queue_enable="NO"
-	_ip=$( jget jname=pgadmin4 mode=quiet ip4_addr )
+	jscp files/pgadmin4 ${jname}:/usr/local/etc/rc.d/
 
-	jrestart ${jname}
+
+	# turn off unnecessary services
+	sysrc \
+		syslogd_enable="NO" \
+		syslogd_flags="-ss -c" \
+		cron_enable="NO" \
+		sendmail_enable="NO" \
+		sendmail_submit_enable="NO" \
+		sendmail_outbound_enable="NO" \
+		sendmail_msp_queue_enable="NO" \
+		pgadmin4_enable="YES"
+
+	service mode=action pgadmin4 start || true
+	echo "waiting for service..."
+	sleep 10		# waiting for service ready
+
+	_ip=$( jget jname=pgadmin4 mode=quiet ip4_addr )
 
 	# postmessage
 	cat <<EOF
