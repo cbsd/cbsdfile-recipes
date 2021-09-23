@@ -16,7 +16,7 @@ daemon_pidfile="/var/run/${name}-daemon.pid"
 logdir="/var/log/${name}"
 logfile="${logdir}/${name}.log"
 extra_commands="reload"
-command="/usr/local/bin/python3.7"
+command="/usr/local/bin/python%%PY_VERSION%%"
 
 load_rc_config $name
 
@@ -36,7 +36,7 @@ pgadmin4_start()
 	[ ! -d ${logdir} ] && mkdir -p ${logdir}
 	touch ${logfile}
 
-	/usr/sbin/daemon -f -R5 -p ${pidfile} -P ${daemon_pidfile} -o ${logfile} ${command} /usr/local/lib/python3.7/site-packages/pgadmin4/pgAdmin4.py
+	/usr/sbin/daemon -f -R5 -p ${pidfile} -P ${daemon_pidfile} -o ${logfile} ${command} /usr/local/lib/python%%PY_VERSION%%/site-packages/pgadmin4/pgAdmin4.py
 }
 
 pgadmin4_stop()

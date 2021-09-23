@@ -2,12 +2,11 @@
 # todo: switch to rc.d instead of rc.local
 # some defaults:
 PG_VER="12"													# install postgres${PG_VER}-client
-PY_VERSION="3.7"												# use python ${PY_VERSION} by default, e.g: 3.7
-PYTHON_CMD="python${PY_VERSION}"										# default python interpreter: python${PY_VERSION}, e.g: python3.7
-PIP_CMD="pip-${PY_VERSION}"											# default pip cmd: pip-${PY_VERSION}, e.g: pip-3.7
+PY_VERSION="3.8"												# use python ${PY_VERSION} by default, e.g: 3.8
+PYTHON_CMD="python${PY_VERSION}"										# default python interpreter: python${PY_VERSION}, e.g: python3.8
+PIP_CMD="pip-${PY_VERSION}"											# default pip cmd: pip-${PY_VERSION}, e.g: pip-3.8
 PY_PREFIX=$( echo ${PY_VERSION} | tr -d "." )									# py${PY_PREFIX}-<packages>, e.g: py37-openssl
-PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v5.1/pip/pgadmin4-5.1-py3-none-any.whl"	# pip whl url/source
-#PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v4.29/pip/pgadmin4-4.29-py3-none-any.whl"	# pip whl url/source
+PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v5.7/pip/pgadmin4-5.7-py3-none-any.whl"	# pip whl url/source
 
 # pgadmin4 default credential
 PGADMIN_SETUP_EMAIL="root@localhost"
@@ -61,7 +60,7 @@ ln -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python
 ln -sf /usr/local/bin/${PIP_CMD} /usr/local/bin/pip
 
 /usr/local/bin/pip install ${PGADMIN4_WHL_URL}
-sed 's:127.0.0.1:0.0.0.0:g' /usr/local/lib/python3.7/site-packages/pgadmin4/config.py > /usr/local/lib/python3.7/site-packages/pgadmin4/config_local.py
+sed 's:127.0.0.1:0.0.0.0:g' /usr/local/lib/python${PY_VERSION}/site-packages/pgadmin4/config.py > /usr/local/lib/python${PY_VERSION}/site-packages/pgadmin4/config_local.py
 
 pkg remove -y rust
 mkdir -p /var/lib/pgadmin
@@ -72,8 +71,11 @@ set +o errexit
 [ ! -d /usr/local/etc/rc.d ] && mkdir -p /usr/local/etc/rc.d
 EOF
 
+	sed "s:%%PY_VERSION%%:${PY_VERSION}:g" files/pgadmin4.tpl > files/pgadmin4
+	chown root:wheel files/pgadmin4
+	chmod 0555 files/pgadmin4
 	jscp files/pgadmin4 ${jname}:/usr/local/etc/rc.d/
-
+	rm -f files/pgadmin4
 
 	# turn off unnecessary services
 	sysrc \
