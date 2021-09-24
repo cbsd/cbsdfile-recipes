@@ -52,6 +52,7 @@ echo "tests found: ${env_path}/tests: ${tests_all}" >> ${log_file} 2>&1
 
 cur_tests=1
 
+set -e
 find ${env_path}/tests -type f -exec basename {} \;  | while read _test; do
 	echo " --- ${cur_tests}/${tests_all}: ${_test} ---"
 	${env_path}/tests/${_test} >> ${log_file} 2>&1
@@ -63,5 +64,6 @@ find ${env_path}/tests -type f -exec basename {} \;  | while read _test; do
 	echo
 	cur_tests=$(( cur_tests + 1 ))
 done
+set +e
 
 exit 0

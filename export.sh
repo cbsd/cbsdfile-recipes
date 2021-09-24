@@ -27,7 +27,8 @@ cd ${MYDIR}
 
 [ -r /usr/jails/export/${jname}.img ] && rm -f /usr/jails/export/${jname}.img
 cbsd ${stop_cmd} ${jname} >> ${log_file} 2>&1 || true
-cbsd ${export_cmd} ${jname} >> ${log_file} 2>&1
+exit 0
+#cbsd ${export_cmd} ${jname} >> ${log_file} 2>&1
 
 if [ ! -r /usr/jails/export/${jname}.img ]; then
 	echo "no such image: /usr/jails/export/${jname}.img" >> ${log_file} 2>&1
