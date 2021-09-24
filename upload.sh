@@ -45,35 +45,38 @@ if [ ${ret} -ne 0 ]; then
 	exit ${ret}
 fi
 
-#remote_dir="${UPLOAD_SSH_ROOT}${arch}/${target_arch}/${ver}/"
-#sshtest=$( timeout 30 ${ssh_string} cd ${remote_dir} )
-#ret=$?
+remote_dir="${UPLOAD_SSH_ROOT}${arch}/${arch}/${ver}/${jname}"
 
-#if [ ${ret} -ne 0 ]; then
-#        echo "ssh cd remote dir failed: ${remote_dir}" >> ${log_file} 2>&1
-#        echo "${sshtest}" >> ${log_file} 2>&1
-#        exit ${ret}
-#fi
+timeout 60 ${ssh_string} <<EOF
+ls -la ${remote_dir}
+echo "${remote_dir}"
+test -d ${remote_dir} || mkdir -p ${remote_dir}
+EOF
 
-#${scp_string} ${path}/base.txz ${UPLOAD_SSH_USER}@${UPLOAD_SSH_HOST}:${remote_dir}/base.txz
-#ret=$?
-#if [ ${ret} -ne 0 ]; then
-#        echo "scp base.txz failed" >> ${log_file} 2>&1
-#        echo "${scp_string} ${path}/base.txz ${UPLOAD_SSH_USER}@${UPLOAD_SSH_HOST}:${remote_dir}/base.txz" >> ${log_file} 2>&1
-#        exit ${ret}
-#fi
-#
-#
-#${scp_string} ${path}/kernel-GENERIC.txz ${UPLOAD_SSH_USER}@${UPLOAD_SSH_HOST}:${remote_dir}/kernel.txz
-#ret=$?
-#if [ ${ret} -ne 0 ]; then
-#        echo "scp kernel.txz failed" >> ${log_file} 2>&1
-#        echo "${scp_string} ${path}/kernel-GENERIC.txz ${UPLOAD_SSH_USER}@${UPLOAD_SSH_HOST}:${remote_dir}/kernel.txz" >> ${log_file} 2>&1
-#        exit ${ret}
-#fi
-#
-# todo - symlink changer
 
-# remove?
-#rm -rf ${destdir}
-#exit ${ret}
+if [ ${ret} -ne 0 ]; then
+	echo "ssh cd remote dir failed: ${remote_dir}" >> ${log_file} 2>&1
+	echo "${sshtest}" >> ${log_file} 2>&1
+	exit ${ret}
+fi
+
+${scp_string} /usr/jails/export/${jname}.img ${UPLOAD_SSH_USER}@${UPLOAD_SSH_HOST}:${remote_dir}/${jname}.img
+
+ret=$?
+if [ ${ret} -ne 0 ]; then
+	echo "scp /usr/jails/export/${jname}.img failed" >> ${log_file} 2>&1
+	echo "${scp_string} ${path}/base.txz ${UPLOAD_SSH_USER}@${UPLOAD_SSH_HOST}:${remote_dir}/${jname}.img" >> ${log_file} 2>&1
+	exit ${ret}
+fi
+
+timeout 60 ${ssh_string} <<EOF
+/root/bin/calcimg.sh -j ${jname} -e ${emulator} -v ${ver} -a ${arch}
+EOF
+
+ret=$?
+
+if [ ${ret} -eq 0 ]; then
+	rm -rf /usr/jails/export/${jname}.img
+fi
+
+exit ${ret}
