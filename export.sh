@@ -9,7 +9,7 @@ set +e
 
 cmd_string=
 
-jobname_file="import-${jname}-${arch}-${ver}"
+jobname_file="export-${jname}-${arch}-${ver}"
 log_file="${LOG_DIR}/${jobname_file}-${log_date}.log"
 
 if [ "${myarch}" != "${arch}" ]; then
@@ -27,8 +27,7 @@ cd ${MYDIR}
 
 [ -r /usr/jails/export/${jname}.img ] && rm -f /usr/jails/export/${jname}.img
 cbsd ${stop_cmd} ${jname} >> ${log_file} 2>&1 || true
-exit 0
-#cbsd ${export_cmd} ${jname} >> ${log_file} 2>&1
+cbsd ${export_cmd} ${jname} >> ${log_file} 2>&1
 
 if [ ! -r /usr/jails/export/${jname}.img ]; then
 	echo "no such image: /usr/jails/export/${jname}.img" >> ${log_file} 2>&1
@@ -38,4 +37,3 @@ fi
 cbsd ${destroy_cmd} pgadmin4 >> ${log_file} 2>&1 || true
 
 exit 0
-
