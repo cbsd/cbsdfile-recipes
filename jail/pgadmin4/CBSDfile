@@ -90,7 +90,7 @@ EOF
 	echo "waiting for service..."
 	sleep 10		# waiting for service ready
 
-	_ip=$( jget jname=pgadmin4 mode=quiet ip4_addr )
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
 
 	# postmessage
 	cat <<EOF

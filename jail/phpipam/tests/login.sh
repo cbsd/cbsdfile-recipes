@@ -9,8 +9,11 @@ if [ -z "${CURL_CMD}" ]; then
 fi
 
 ip4_addr=$( cbsd jget jname=phpipam mode=quiet ip4_addr )
-echo "Probing: http://${ip4_addr}"
-${CURL_CMD} --no-progress-meter -L http://${ip4_addr} | grep 'Please login'
+
+GREP_VAL="Please login"
+
+echo "Probing: http://${ip4_addr} ( filter cmd: ${GREP_VAL} )"
+${CURL_CMD} --no-progress-meter -L http://${ip4_addr} | grep "${GREP_VAL}"
 ret=$?
 
 exit ${ret}
