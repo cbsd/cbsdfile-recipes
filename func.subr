@@ -51,12 +51,14 @@ case "${emulator}" in
 		destroy_cmd="bdestroy"
 		status_cmd="bstatus"
 		start_cmd="bstart"
+		stop_cmd="bstop"
 		export_cmd="bexport"
 		;;
 	jail)
 		destroy_cmd="jdestroy"
 		status_cmd="jstatus"
 		start_cmd="jstart"
+		stop_cmd="jstop"
 		export_cmd="jexport"
 		;;
 esac

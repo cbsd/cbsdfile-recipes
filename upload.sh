@@ -77,6 +77,7 @@ ret=$?
 
 if [ ${ret} -eq 0 ]; then
 	rm -rf /usr/jails/export/${jname}.img
+	cbsd ${destroy_cmd} ${jname}
 fi
 
 exit ${ret}
