@@ -16,8 +16,7 @@ quiet=1
 
 jail_pgadmin4()
 {
-	#ip4_addr="DHCP"
-	ip4_addr="10.0.1.29"
+	ip4_addr="DHCP"
 	host_hostname="${jname}.my.domain"
 	pkg_bootstrap=1
 	ver="native"
@@ -33,7 +32,6 @@ jail_pgadmin4()
 		rust"
 
 	# rust to build cryptography module
-
 }
 
 postcreate_pgadmin4()

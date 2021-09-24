@@ -1,0 +1,65 @@
+myarch=$( uname -m )
+arch=
+target_arch=
+ver=
+path=
+lock=
+log_file=
+emulator=
+jname=
+
+while getopts "a:d:e:j:l:p:v:z:" opt; do
+	case "${opt}" in
+		a) arch="${OPTARG}" ;;
+		d) log_date="${OPTARG}" ;;
+		e) emulator="${OPTARG}" ;;
+		j) jname="${OPTARG}" ;;
+		l) log_file="${OPTARG}" ;;
+		p) path="${OPTARG}" ;;
+		v) ver="${OPTARG}" ;;
+		z) lock=1 ;;
+	esac
+	shift $(($OPTIND - 1))
+done
+
+if [ -z "${emulator}" ]; then
+	echo "empty emulator: -e"
+	exit 1
+fi
+if [ -z "${jname}" ]; then
+	echo "empty jname: -j"
+	exit 1
+fi
+if [ -z "${ver}" ]; then
+	echo "empty ver: -v"
+	exit 1
+fi
+if [ -z "${arch}" ]; then
+	arch="${myarch}"
+fi
+if [ -z "${log_file}" ]; then
+	[ -z "${log_date}" ] && log_date=$( date "+%Y-%m-%d-%H-%M-%S" )
+	log_file="${LOG_DIR}/${jobname_file}-${log_date}.log"
+fi
+if [ -z "${LOG_DIR}" ]; then
+	echo "empty LOG_DIR params"
+	exit 1
+fi
+
+case "${emulator}" in
+	bhyve)
+		destroy_cmd="bdestroy"
+		status_cmd="bstatus"
+		start_cmd="bstart"
+		export_cmd="bexport"
+		;;
+	jail)
+		destroy_cmd="jdestroy"
+		status_cmd="jstatus"
+		start_cmd="jstart"
+		export_cmd="jexport"
+		;;
+esac
+
+[ ! -d "${LOG_DIR}" ] && mkdir -p ${LOG_DIR}
+echo >> /dev/null # for valid errcode
