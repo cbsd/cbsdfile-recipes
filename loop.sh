@@ -50,12 +50,12 @@ buildimg() {
 		return ${ret}
 	fi
 
-	# tests
-	${MYDIR}/tests.sh -e ${emulator} -j ${jname} -v ${ver} -d ${log_date}
+	# test
+	${MYDIR}/test.sh -e ${emulator} -j ${jname} -v ${ver} -d ${log_date}
 	ret=$?
 
 	if [ ${ret} -ne 0 ]; then
-		echo "error: ${MYDIR}/tests.sh -e ${emulator} -j ${jname} -v ${ver} -d ${log_date}" >> ${log_file}
+		echo "error: ${MYDIR}/test.sh -e ${emulator} -j ${jname} -v ${ver} -d ${log_date}" >> ${log_file}
 		return ${ret}
 	fi
 
