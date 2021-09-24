@@ -1,3 +1,4 @@
+# Install rtorrent for CBSD forms-rtorrent
 quiet=0
 
 jail_rtorrent()
@@ -5,6 +6,7 @@ jail_rtorrent()
 	ip4_addr="DHCP"
 	host_hostname="${jname}.my.domain"
 	pkg_bootstrap=1
+	ver="native"
 }
 
 postcreate_rtorrent()
@@ -12,13 +14,17 @@ postcreate_rtorrent()
 	local _ip
 
 	# turn off unnecessary services
-	sysrc jname=${jname} syslogd_enable="NO" \
+	sysrc \
+		syslogd_enable="NO" \
 		cron_enable="NO" \
 		sendmail_enable="NO" \
 		sendmail_submit_enable="NO"\
 		sendmail_outbound_enable="NO" \
 		sendmail_msp_queue_enable="NO" \
-		syslogd_enable="NO"
+		syslogd_enable="NO" \
+		clear_tmp_enable="YES"
+
+	forms module=rtorrent inter=0
 
 	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
 
@@ -52,6 +58,5 @@ EOF
 		IFS=","
 	done
 	IFS="${OIFS}"
-
 	set -o errexit
 }
