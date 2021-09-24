@@ -54,7 +54,7 @@ cur_tests=1
 
 find ${env_path}/tests -type f -exec basename {} \;  | while read _test; do
 	echo " --- ${cur_tests}/${tests_all}: ${_test} ---"
-	${env_path}/tests/${_test} 2>&1 | tee -a ${log_file}
+	${env_path}/tests/${_test} >> ${log_file} 2>&1
 	ret=$?
 	if [ ${ret} -ne 0 ]; then
 		echo " >> ${_tests}: failed <<"
