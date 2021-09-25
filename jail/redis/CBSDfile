@@ -16,6 +16,12 @@ jail_redis()
 	runasap=1
 }
 
+preup_redis()
+{
+	# forms-based module, install it first
+	module mode=install forms-redis
+}
+
 postcreate_redis()
 {
 	local _ip

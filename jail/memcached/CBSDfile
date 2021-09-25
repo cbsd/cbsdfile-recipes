@@ -9,6 +9,12 @@ jail_memcached()
 	ver="native"
 }
 
+preup_memcached()
+{
+	# forms-based module, install it first
+	module mode=install forms-memcached
+}
+
 postcreate_memcached()
 {
 	local _ip

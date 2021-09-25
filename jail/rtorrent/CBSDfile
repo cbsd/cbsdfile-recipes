@@ -9,6 +9,12 @@ jail_rtorrent()
 	ver="native"
 }
 
+preup_rtorrent()
+{
+	# forms-based module, install it first
+	module mode=install forms-rtorrent
+}
+
 postcreate_rtorrent()
 {
 	local _ip
