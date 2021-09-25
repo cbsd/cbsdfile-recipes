@@ -1,0 +1,64 @@
+# Install moin jail
+
+quiet=0
+
+# default vars
+DEFAULT_ADMIN_USER="Admin"
+DEFAULT_ADMIN_PASSWORD="Admin"
+DEFAULT_ADMIN_EMAIL="admin@moin"
+MOINDIR="/usr/local/share/moin"					# port install default location
+
+jail_moin()
+{
+	ip4_addr="DHCP"
+	#ip4_addr="192.168.64.80"
+	pkglist="lang/python27 ap24-py27-mod_wsgi www/apache24 moinmoin"
+	host_hostname="${jname}.my.domain"
+	pkg_bootstrap=1
+}
+
+postcreate_moin()
+{
+	local _ip
+
+	mkdir -p ${data}${MOINDIR}/data ${data}${MOINDIR}/underlay
+
+	# copy vhost
+	#install -m 0444 site.conf ${data}/usr/local/etc/apache24/Includes/site.conf
+
+	jexec
+#	cd ${MOINDIR}/config/ && patch --check -N < ${myworkdir}/patch-wikiconfig.py > /dev/null 2>&1
+#	[ $? -eq 0 ] && $ECHO "${N1_COLOR}apply patch-wikiconfig.py patch for: ${N2_COLOR}wikiconfig.py${N0_COLOR}" && patch < ${myworkdir}/patch-wikiconfig.py
+
+	# turn off unnecessary services and enable apache
+	sysrc \
+		syslogd_enable="NO" \
+		cron_enable="NO" \
+		sendmail_enable="NO" \
+		sendmail_submit_enable="NO" \
+		sendmail_outbound_enable="NO" \
+		sendmail_msp_queue_enable="NO" \
+		apache24_enable="YES"
+
+	# execute cmd inside jail
+	jexec <<EOF
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
+set -o errexit
+
+cd ${MOINDIR}/config/ && patch --check -N < /var/db/patch-wikiconfig.py > /dev/null 2>&1
+chmod -R u+rw,go-ws ${MOINDIR}/data
+chown -R ${CGIUSER}:${CGIGROUP} ${MOINDIR}
+moin account create --name=${DEFAULT_ADMIN_USER} --password=${DEFAULT_ADMIN_PASSWORD} --email="${DEFAULT_ADMIN_EMAIL}"
+EOF
+
+	#jrestart ${jname}
+	service jname=${jname} mode=action apache24 restart || true
+
+	# postmessage
+	cat <<EOF
+	${jname} url          : http://${ip4_addr}:80
+	${jname} default user : ${DEFAULT_ADMIN_USER}
+	${jname} default email: ${DEFAULT_ADMIN_EMAIL}
+	${jname} default pass : ${DEFAULT_ADMIN_PASSWORD}
+EOF
+}
