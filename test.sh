@@ -54,7 +54,7 @@ cur_tests=1
 
 set -e
 find ${env_path}/tests -type f -exec basename {} \;  | while read _test; do
-	echo " --- ${cur_tests}/${tests_all}: ${_test} ---"
+	echo " --- ${cur_tests}/${tests_all}: ${_test} ---" >> ${log_file} 2>&1
 	${env_path}/tests/${_test} >> ${log_file} 2>&1
 	ret=$?
 	if [ ${ret} -ne 0 ]; then

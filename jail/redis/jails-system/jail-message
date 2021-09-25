@@ -1,0 +1,5 @@
+
+ For reconfigure redis, please run:
+
+   cbsd forms module=redis jname=$jname
+
