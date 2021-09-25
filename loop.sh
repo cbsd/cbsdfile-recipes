@@ -95,6 +95,7 @@ loop()
 			exit 1
 		fi
 		for jname in $( find ${MYDIR}/${emulator} -depth 1 -maxdepth 1 -type d -exec basename {} \; ); do
+			[ "${jname}" = ".broken" ] && continue
 			buildimg ${jname}
 		done
 	else
