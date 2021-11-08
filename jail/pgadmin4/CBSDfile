@@ -1,12 +1,12 @@
 # Install PGADMIN4 jail
 # todo: switch to rc.d instead of rc.local
 # some defaults:
-PG_VER="12"													# install postgres${PG_VER}-client
+PG_VER="14"													# install postgres${PG_VER}-client
 PY_VERSION="3.8"												# use python ${PY_VERSION} by default, e.g: 3.8
 PYTHON_CMD="python${PY_VERSION}"										# default python interpreter: python${PY_VERSION}, e.g: python3.8
 PIP_CMD="pip-${PY_VERSION}"											# default pip cmd: pip-${PY_VERSION}, e.g: pip-3.8
-PY_PREFIX=$( echo ${PY_VERSION} | tr -d "." )									# py${PY_PREFIX}-<packages>, e.g: py37-openssl
-PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v5.7/pip/pgadmin4-5.7-py3-none-any.whl"	# pip whl url/source
+PY_PREFIX=$( echo ${PY_VERSION} | tr -d "." )									# py${PY_PREFIX}-<packages>, e.g: py39-openssl
+PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v6.1/pip/pgadmin4-6.1-py3-none-any.whl"	# pip whl url/source
 
 # pgadmin4 default credential
 PGADMIN_SETUP_EMAIL="root@localhost"
@@ -20,7 +20,11 @@ jail_pgadmin4()
 	host_hostname="${jname}.my.domain"
 	pkg_bootstrap=1
 	ver="native"
+
+	# pyXX-wheel not direct deps, to mute
+	# Using legacy 'setup.py install' for XXX, since package 'wheel' is not installed.
 	pkglist="postgresql${PG_VER}-client \
+		py${PY_PREFIX}-wheel \
 		py${PY_PREFIX}-virtualenv \
 		py${PY_PREFIX}-pip \
 		py${PY_PREFIX}-openssl \
