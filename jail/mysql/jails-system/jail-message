@@ -1,0 +1,5 @@
+
+ For reconfigure mysql, please run:
+
+   cbsd forms module=mysql jname=$jname
+

@@ -70,7 +70,7 @@ if [ ${ret} -ne 0 ]; then
 fi
 
 timeout 60 ${ssh_string} <<EOF
-/root/bin/calcimg.sh -j ${jname} -e ${emulator} -v ${ver} -a ${arch}
+/root/bin/calcimg.sh -j ${jname} -e ${emulator} -v ${ver} -a ${arch} -s 0
 EOF
 
 ret=$?
