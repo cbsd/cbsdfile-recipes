@@ -295,7 +295,7 @@ EOF
 
 	# tests
 	set +o xtrace
-	tests/process.sh
+	tests/nginx_process.sh
 	tests/gitlab_status.sh
 	set -o xtrace
 
