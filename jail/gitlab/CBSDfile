@@ -103,7 +103,7 @@ EOF
 	# tests:
 	set +o xtrace
 	set -o errexit
-	tests/postgres_port.sh
+	tests/10_postgres_port.sh
 	set +o errexit
 	set -o xtrace
 
@@ -125,7 +125,7 @@ EOF
 	# tests
 	set +o xtrace
 	set -o errexit
-	tests/postgres_cred.sh
+	tests/20_postgres_cred.sh
 	set +o errexit
 	set -o xtrace
 
@@ -151,8 +151,8 @@ EOF
 	# tests
 	set +o xtrace
 	set -o errexit
-	tests/redis_process.sh
-	tests/redis_sock.sh
+	tests/30_redis_process.sh
+	tests/40_redis_sock.sh
 	set +o errexit
 	set -o xtrace
 
@@ -301,9 +301,9 @@ EOF
 	# tests
 	set +o xtrace
 	set -o errexit
-	tests/nginx_process.sh
-	tests/gitlab_status.sh
-	tests/login.sh
+	tests/50_nginx_process.sh
+	tests/60_gitlab_status.sh
+	tests/70_login.sh
 	set +o errexit
 	set -o xtrace
 
