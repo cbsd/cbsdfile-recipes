@@ -102,7 +102,9 @@ EOF
 
 	# tests:
 	set +o xtrace
+	set -o errexit
 	tests/postgres_port.sh
+	set +o errexit
 	set -o xtrace
 
 	jexec <<EOF
@@ -122,7 +124,9 @@ EOF
 
 	# tests
 	set +o xtrace
+	set -o errexit
 	tests/postgres_cred.sh
+	set +o errexit
 	set -o xtrace
 
 	# 3. Redis
@@ -146,10 +150,11 @@ EOF
 
 	# tests
 	set +o xtrace
+	set -o errexit
 	tests/redis_process.sh
 	tests/redis_sock.sh
+	set +o errexit
 	set -o xtrace
-
 
 	# Set db password
 	jexec <<EOF
@@ -295,8 +300,10 @@ EOF
 
 	# tests
 	set +o xtrace
+	set -o errexit
 	tests/nginx_process.sh
 	tests/gitlab_status.sh
+	set +o errexit
 	set -o xtrace
 
 	if [ "${GITLAB_SSH_PORT}" != "22" ]; then
@@ -331,7 +338,6 @@ EOF
 	set +o xtrace
 	# postmessage
 	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
-	set +o errexit  # retcode for iptype
 
 	OIFS="${IFS}"
 	IFS=","
@@ -383,5 +389,4 @@ host ${host_hostname}
 EOF
 	fi
 
-	set -o errexit
 }
