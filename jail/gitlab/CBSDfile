@@ -1,0 +1,383 @@
+# Based on: https://gitlab.fechner.net/mfechner/Gitlab-docu/-/blob/master/install/14.5-freebsd.md
+
+# Uncommend CLOUD_\* vars ro work remote API provider
+# See https://www.bsdstore.ru/en/cbsdfile.html for details
+#CLOUD_URL="https://us-sw.api.my.domain"
+#CLOUD_KEY="ssh-ed25519 XXX your@comment"
+
+# Customize gitlab options
+# use alternative ssh port, e.g: 2233
+# default:
+# GITLAB_SSH_PORT=2233
+# or specify via env:
+# env GITLAB_SSH_PORT=1234 cbsd up
+GITLAB_SSH_PORT=22
+
+# Use CBSD expose to forward SSH traffic? Useful when GITLAB_SSH_PORT != 22
+# By default: disabled ( GITLAB_SSH_EXPOSE=0 )
+# default:
+# GITLAB_SSH_EXPOSE=0
+GITLAB_SSH_EXPOSE=0
+
+# GitLab root password:
+GITLAB_ROOT_PASSWORD="yourpassword"
+
+# Default Postgresql version
+PG_VER="13"
+
+quiet=0
+
+jail_gitlab()
+{
+	# auto IPv4 by default
+	ipv4_addr="DHCP"
+	# for fixed address, or overwrite via args: 'cbsd up ip4_addr="1.1.1.1"`:
+
+	# set interface=0 when IP not manage by CBSD
+	interface="auto"
+
+	# jail autostart on boot?
+	astart=0
+
+	# PgSQL req:
+	allow_sysvipc=1
+	allow_raw_sockets=1
+	host_hostname="${jname}.convectix.com"
+	pkg_bootstrap="1"
+	pkglist="security/ca_root_nss devel/git databases/postgresql${PG_VER}-contrib databases/postgresql${PG_VER}-server www/nginx www/gitlab-ce"
+}
+
+postcreate_gitlab()
+{
+	local _ip
+
+	# for expose
+	if [ ${GITLAB_SSH_EXPOSE} -eq 1 ]; then
+		expose mode=add in=${GITLAB_SSH_PORT} out=22
+	fi
+
+	# cbsd sysrc
+	sysrc \
+		syslogd_flags="-ss" \
+		sendmail_enable="NO" \
+		sendmail_submit_enable="NO" \
+		sendmail_outbound_enable="NO" \
+		sendmail_msp_queue_enable="NO" \
+		cron_enable="NO" \
+		sshd_enable="YES" \
+		sshd_flags="-oUseDNS=no" \
+		gitlab_enable="YES" \
+		postgresql_enable="YES" \
+		nginx_enable="YES" \
+		redis_enable="YES"
+
+	# 2. Database
+	# some secrets
+	set +o xtrace
+	# use CBSD internal function to generate random password, length=30
+	DB_PASSWORD=$( random_password_gen -l 30 )
+
+	# cbsd jexec
+	jexec <<EOF
+echo "127.0.0.1:5432:gitlabhq_production:git:${DB_PASSWORD}" > /root/.pgpass
+chmod 0600 /root/.pgpass
+EOF
+	echo
+	${ECHO} "${H3_COLOR}Postgres git user password saved in: ${N2_COLOR}${data}/root/.pgpass${N0_COLOR}"
+	echo
+	set -o xtrace
+
+	# Postgresql setup
+	service mode=action postgresql initdb
+
+	# Allow full access to DB
+	# TODO this needs to be fixed to be more secure
+	jexec <<EOF
+echo "host    all             all             0.0.0.0/0               trust" >> /var/db/postgres/data${PG_VER}/pg_hba.conf
+EOF
+
+	# Start postgres
+	service mode=action jname=${jname} postgresql start
+	sleep 2
+
+	# tests:
+	set +o xtrace
+	tests/postgres_port.sh
+	set -o xtrace
+
+	jexec <<EOF
+# create user git
+psql -d template1 -U postgres -c "CREATE USER git CREATEDB SUPERUSER;"
+
+# Create the GitLab production database & grant all privileges on database
+psql -d template1 -U postgres -c "CREATE DATABASE gitlabhq_production OWNER git;"
+
+## Try connecting to the new database with the new user
+psql -U git -d gitlabhq_production
+
+# Connect as superuser to gitlab db and enable pg_trgm extension if not installed
+psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS btree_gist;"
+EOF
+
+	# tests
+	set +o xtrace
+	tests/postgres_cred.sh
+	set -o xtrace
+
+	# 3. Redis
+	# Redis socket configuration
+	jexec <<EOF
+# Enable Redis socket
+echo 'unixsocket /var/run/redis/redis.sock' >> /usr/local/etc/redis.conf
+
+# Grant permission to the socket to all members of the redis group
+echo 'unixsocketperm 770' >> /usr/local/etc/redis.conf
+
+# Allow Redis to be started
+sysrc redis_enable=YES
+
+# Activate the changes to redis.conf
+service redis restart
+
+# Add git user to redis group
+pw groupmod redis -m git
+EOF
+
+	# tests
+	set +o xtrace
+	tests/redis_process.sh
+	tests/redis_sock.sh
+	set -o xtrace
+
+
+	# Set db password
+	jexec <<EOF
+sed -i '' -e 's/\s\spassword: "secure password"/  password: "${DB_PASSWORD}"/g' /usr/local/www/gitlab-ce/config/database.yml
+EOF
+
+#	# 4. GitLab
+#	# Configure It
+	jexec <<EOF
+# You need to be root user
+
+# Go to GitLab installation folder
+cd /usr/local/www/gitlab-ce
+
+# Update GitLab config file, follow the directions at the top of the file
+#vi config/gitlab.yml
+#
+## Put a secret into maybe with: head /dev/urandom | tr -dc A-Za-z0-9 | head -c64
+#vi config/secrets.yml
+#
+## Find number of cores
+#sysctl hw.ncpu
+#
+# Enable cluster mode if you expect to have a high load instance
+# Ex. change amount of workers to 3 for 2GB RAM server
+# Set the number of workers to at least the number of cores
+#vi config/puma.rb
+
+# Configure Git global settings for git user
+# 'autocrlf' is needed for the web editor
+su -l git -c "git config --global core.autocrlf input"
+
+# Disable 'git gc --auto' because GitLab already runs 'git gc' when needed
+su -l git -c "git config --global gc.auto 0"
+
+# Enable packfile bitmaps
+su -l git -c "git config --global repack.writeBitmaps true"
+
+# Enable push options
+su -l git -c "git config --global receive.advertisePushOptions true"
+
+# Enable fsyncObjectFiles to reduce risk of repository corruption if the server crashes
+su -l git -c "git config --global core.fsyncObjectFiles true"
+
+# Make sure .ssh directory exists
+su -l git -c "mkdir -p /usr/local/git/.ssh"
+
+# Make sure repositories directory exists with correct permissions
+su -l git -c "mkdir -p /usr/local/git/repositories"
+chown git /usr/local/git/repositories
+chgrp git /usr/local/git/repositories
+chmod 2770 /usr/local/git/repositories
+EOF
+
+	#Important Note: Make sure to edit both gitlab.yml and puma.rb to match your setup.
+	#Note: If you want to use HTTPS, see Using HTTPS for the additional steps.
+
+	#Configure GitLab DB Settings
+	# Remote PostgreSQL only:
+	# Update username/password in config/database.yml.
+	# You only need to adapt the production settings (first part).
+	# If you followed the database guide then please do as follows:
+	# Change 'secure password' with the value you have given to $password
+	# You can keep the double quotes around the password
+	#vi config/database.yml
+
+	# Initialize Database and Activate Advanced Features
+	jexec <<EOF
+# gitlab need write access to create a symlink
+chown git /usr/local/share/gitlab-shell
+
+# make sure you are still using the root user and in /usr/local/www/gitlab-ce
+#su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:setup RAILS_ENV=production"
+yes yes | su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:setup RAILS_ENV=production"
+# Type 'yes' to create the database tables.
+
+# Make sure we undo the temporary permission fix again
+chown root /usr/local/share/gitlab-shell
+
+# When done you see 'Administrator account created:'
+EOF
+
+	#
+	## Note: You can set the Administrator/root password by supplying it in environmental variable GITLAB_ROOT_PASSWORD as seen below. If you don't set the password (and it is set to the default one) please wait with exposing GitLab to the public internet until the installation is done and you've logged into the server the first time. During the first login you'll be forced to change the default password.
+
+	jexec <<EOF
+yes yes | su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:setup DISABLE_DATABASE_ENVIRONMENT_CHECK=1 RAILS_ENV=production GITLAB_ROOT_PASSWORD=${GITLAB_ROOT_PASSWORD}"
+EOF
+
+	#Secure secrets.yml
+	#The secrets.yml file stores encryption keys for sessions and secure variables.
+	#Backup secrets.yml someplace safe, but don't store it in the same place as your database backups.
+	#Otherwise your secrets are exposed if one of your backups is compromised.
+
+	#Check Application Status
+	#Check if GitLab and its environment are configured correctly:
+
+	jexec <<EOF
+su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:env:info RAILS_ENV=production"
+EOF
+
+	# Compile Assets
+	jexec <<EOF
+su -l git -c "cd /usr/local/www/gitlab-ce && yarn install --production --pure-lockfile"
+su -l git -c "cd /usr/local/www/gitlab-ce && RAILS_ENV=production NODE_ENV=production USE_DB=false SKIP_STORAGE_VALIDATION=true NODE_OPTIONS='--max_old_space_size=3584' bundle exec rake gitlab:assets:compile"
+EOF
+
+	#Remove Superuser rights from database user
+	jexec <<EOF
+psql -d template1 -U postgres -c "ALTER USER git WITH NOSUPERUSER;"
+EOF
+
+	#
+	#Start Your GitLab Instance
+	jexec <<EOF
+service gitlab restart
+echo "waiting for gitlab services..."
+sleep 10
+EOF
+
+	# use this command as root user to start gitlab:
+	#service gitlab start
+	# or this:
+	#/usr/local/etc/rc.d/gitlab restart
+
+	# 7. Nginx
+	jail_v6_active=0
+
+	# disable v6, todo: gets IP
+	if [ ${jail_v6_active} -eq 0 ]; then
+		jexec <<EOF
+cp -a /usr/local/www/gitlab-ce/lib/support/nginx/gitlab /usr/local/www/gitlab-ce/lib/support/nginx/gitlab.bak
+sed -i '' -e "s/^.*listen \\\[::\\\]/  # listen [::]:80 default_server;;/g" /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
+#sed -i '' -e 's/^.*listen \[::\]:80 default_server;$//g' /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
+EOF
+
+	jexec <<EOF
+mkdir /var/log/nginx
+nginx -t
+service nginx restart
+EOF
+
+	# tests
+	set +o xtrace
+	tests/nginx_status.sh
+	tests/gitlab_status.sh
+	set -o xtrace
+
+	if [ "${GITLAB_SSH_PORT}" != "22" ]; then
+		jexec <<EOF
+su -l git -c "mkdir -p /usr/local/git/.ssh"
+cat > /usr/local/git/.ssh/config <<JEOF
+host ${host_hostname}
+	user git
+	port ${GITLAB_SSH_PORT}
+	hostname 127.0.0.1
+JEOF
+chown git:git /usr/local/git/.ssh/config
+${ECHO} "${N1_COLOR}non-standart ssh port saved in: ${N2_COLOR}/usr/local/git/.ssh/config${N0_COLOR}"
+EOF
+	fi
+
+#	# Create .gitlab_shell_secret symlink
+#	jexec ln -s /usr/local/www/gitlab-ce/.gitlab_shell_secret /usr/local/share/gitlab-shell/.gitlab_shell_secret
+
+
+#	# Update config files
+#	jexec <<EOF
+## Replace host with our IP
+##sed -i '' -e 's/^.*host: localhost$/    host: 192.168.0.251/g' /usr/local/www/gitlab-ce/config/gitlab.yml
+#sed -i '' -e "s/^.*host: localhost$/    host: ${ip4_addr}/g" /usr/local/www/gitlab-ce/config/gitlab.yml
+## Replace port for gitlab web interface
+#sed -i '' -e 's/^.*port: 80 .*$/    port: 10080/g' /usr/local/www/gitlab-ce/config/gitlab.yml
+## gitlab ssh config
+##sed -i '' -e 's/^.*ssh_port: 22$/    ssh_port: 2223/g' /usr/local/www/gitlab-ce/config/gitlab.yml
+
+
+	set +o xtrace
+	# postmessage
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+	set +o errexit  # retcode for iptype
+
+	OIFS="${IFS}"
+	IFS=","
+	for i in ${_ip}; do
+		IFS="${OIFS}"
+		myip=
+		iptype ${i}
+		case $? in
+			1)
+				# ipv4, no cast
+				myip="${i}"
+				;;
+			2)
+				# ipv6, add brackets
+				myip="[${i}]"
+				;;
+			*)
+				# unknown IP type
+				continue
+				;;
+		esac
+
+		cat <<EOF
+	GitLab URL          : http://${myip}
+	GitLab root login   : root
+	GitLab root passowrd: "${GITLAB_ROOT_PASSWORD}"
+
+	Hint:
+	Enable cluster mode if you expect to have a high load instance
+	Ex. change amount of workers to 3 for 2GB RAM server
+	Set the number of workers to at least the number of cores:
+
+	vi /usr/local/www/gitlab-ce/config/puma.rb
+
+EOF
+		IFS=","
+	done
+	IFS="${OIFS}"
+
+	if [ "${GITLAB_SSH_PORT}" != "22" ]; then
+		${ECHO} "  ${N1_COLOR}hint: You may want to use the configuration for an alternative port${N0_COLOR}"
+		${CAT_CMD} <<EOF
+host ${host_hostname}
+	user git
+	port ${GITLAB_SSH_PORT}
+EOF
+	fi
+
+	set -o errexit
+}
