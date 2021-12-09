@@ -285,6 +285,7 @@ cp -a /usr/local/www/gitlab-ce/lib/support/nginx/gitlab /usr/local/www/gitlab-ce
 sed -i '' -e "s/^.*listen \\\[::\\\]/  # listen [::]:80 default_server;;/g" /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
 #sed -i '' -e 's/^.*listen \[::\]:80 default_server;$//g' /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
 EOF
+	fi
 
 	jexec <<EOF
 mkdir /var/log/nginx
@@ -355,6 +356,13 @@ EOF
 
 		cat <<EOF
 	GitLab URL          : http://${myip}
+EOF
+		IFS=","
+	done
+
+	IFS="${OIFS}"
+
+	cat <<EOF
 	GitLab root login   : root
 	GitLab root passowrd: "${GITLAB_ROOT_PASSWORD}"
 
@@ -364,11 +372,7 @@ EOF
 	Set the number of workers to at least the number of cores:
 
 	vi /usr/local/www/gitlab-ce/config/puma.rb
-
 EOF
-		IFS=","
-	done
-	IFS="${OIFS}"
 
 	if [ "${GITLAB_SSH_PORT}" != "22" ]; then
 		${ECHO} "  ${N1_COLOR}hint: You may want to use the configuration for an alternative port${N0_COLOR}"
