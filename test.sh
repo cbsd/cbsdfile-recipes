@@ -47,13 +47,13 @@ if [ ! -d "${env_path}/tests" ]; then
 	exit 0
 fi
 
-tests_all=$( find ${env_path}/tests -type f -print 2>&1 | wc -l | awk '{printf $1}' )
+tests_all=$( find ${env_path}/tests/ -type f -print 2>&1 | wc -l | awk '{printf $1}' )
 echo "tests found: ${env_path}/tests: ${tests_all}" >> ${log_file} 2>&1
 
 cur_tests=1
 
 set -e
-find ${env_path}/tests -type f -exec basename {} \;  | while read _test; do
+find ${env_path}/tests/ -type f -exec basename {} \;  | sort | while read _test; do
 	echo " --- ${jname} tests: ${cur_tests}/${tests_all}: ${_test} ---" | tee -a ${log_file} 2>&1
 	${env_path}/tests/${_test} >> ${log_file} 2>&1
 	ret=$?
