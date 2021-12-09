@@ -303,6 +303,7 @@ EOF
 	set -o errexit
 	tests/nginx_process.sh
 	tests/gitlab_status.sh
+	tests/login.sh
 	set +o errexit
 	set -o xtrace
 
