@@ -27,6 +27,11 @@ PG_VER="13"
 
 quiet=0
 
+# used to configure nginx
+jail_has_v4=0
+jail_has_v6=0
+jail_ips=
+
 jail_gitlab()
 {
 	# auto IPv4 by default
@@ -47,9 +52,59 @@ jail_gitlab()
 	pkglist="security/ca_root_nss devel/git databases/postgresql${PG_VER}-contrib databases/postgresql${PG_VER}-server www/nginx www/gitlab-ce"
 }
 
+# export:
+# jail_has_v4
+# jail_has_v6
+# jail_ip
+get_jail_ips()
+{
+	local _ip
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+
+	[ -z "${_ip}" ] && err 1 "${N1_COLOR}${CBSD_APP}: unable to determine jail IPs: ${N2_COLOR}${jname}${N0_COLOR}"
+
+	OIFS="${IFS}"
+	IFS=","
+	for i in ${_ip}; do
+		IFS="${OIFS}"
+		myip=
+		iptype ${i}
+		case $? in
+			1)
+				jail_has_v4=1
+				# ipv4, no cast
+				if [ -z "${jail_ip}" ]; then
+					jail_ip="${i}"
+				else
+					jail_ip="${jail_ip} ${i}"
+				fi
+				;;
+			2)
+				# ipv6, add brackets
+				jail_has_v6=1
+				if [ -z "${jail_ip}" ]; then
+					jail_ip="[${i}]"
+				else
+					jail_ip="${jail_ip} [${i}]"
+				fi
+				;;
+			*)
+				[ -z "${_ip}" ] && err 1 "${N1_COLOR}${CBSD_APP}: unknown jail IP type: ${N2_COLOR}${i}${N0_COLOR}"
+				;;
+		esac
+		IFS=","
+	done
+
+	IFS="${OIFS}"
+	return 0
+}
+
+
 postcreate_gitlab()
 {
 	local _ip
+
+	get_jail_ips
 
 	# for expose
 	if [ ${GITLAB_SSH_EXPOSE} -eq 1 ]; then
@@ -284,11 +339,22 @@ EOF
 	jail_v6_active=0
 
 	# disable v6, todo: gets IP
-	if [ ${jail_v6_active} -eq 0 ]; then
+	if [ ${jail_has_v4} -eq 1 -a ${jail_has_v6} -eq 1 ]; then
+		# do nothing
+	elif [ ${jail_has_v4} -eq 1 -a ${jail_has_v6} -eq 0 ]; then
+		# v4 only
 		jexec <<EOF
 cp -a /usr/local/www/gitlab-ce/lib/support/nginx/gitlab /usr/local/www/gitlab-ce/lib/support/nginx/gitlab.bak
 sed -i '' -e "s/^.*listen \\\[::\\\]/  # listen [::]:80 default_server;;/g" /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
 #sed -i '' -e 's/^.*listen \[::\]:80 default_server;$//g' /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
+EOF
+	elif [ ${jail_has_v4} -eq 0 -a ${jail_has_v6} -eq 1 ]; then
+		# v6 only
+		jexec <<EOF
+listen 0.0.0.0:80
+cp -a /usr/local/www/gitlab-ce/lib/support/nginx/gitlab /usr/local/www/gitlab-ce/lib/support/nginx/gitlab.bak
+sed -i '' -e "s/^.*listen 0.0.0.0:80 default_server;/g" /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
+#sed -i '' -e 's/^.*listen 0.0.0.0:80 default_server;$//g' /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
 EOF
 	fi
 
@@ -338,38 +404,11 @@ EOF
 
 	set +o xtrace
 	# postmessage
-	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
-
-	OIFS="${IFS}"
-	IFS=","
-	for i in ${_ip}; do
-		IFS="${OIFS}"
-		myip=
-		iptype ${i}
-		case $? in
-			1)
-				# ipv4, no cast
-				myip="${i}"
-				;;
-			2)
-				# ipv6, add brackets
-				myip="[${i}]"
-				;;
-			*)
-				# unknown IP type
-				continue
-				;;
-		esac
-
-		cat <<EOF
-	GitLab URL          : http://${myip}
-EOF
-		IFS=","
+	for i in ${jail_ip}; do
+		${ECHO} "	GitLab URL	: http://${myip}"
 	done
 
-	IFS="${OIFS}"
-
-	cat <<EOF
+	${CAT_CMD} <<EOF
 	GitLab root login   : root
 	GitLab root passowrd: "${GITLAB_ROOT_PASSWORD}"
 
