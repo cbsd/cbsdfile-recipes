@@ -104,6 +104,8 @@ postcreate_gitlab()
 {
 	local _ip
 
+	set +o xtrace
+	set +o errexit
 	get_jail_ips
 
 	# for expose
@@ -135,6 +137,7 @@ postcreate_gitlab()
 	# cbsd jexec
 	jexec <<EOF
 echo "127.0.0.1:5432:gitlabhq_production:git:${DB_PASSWORD}" > /root/.pgpass
+echo "::1:5432:gitlabhq_production:git:${DB_PASSWORD}" >> /root/.pgpass
 chmod 0600 /root/.pgpass
 EOF
 	echo
@@ -149,6 +152,7 @@ EOF
 	# TODO this needs to be fixed to be more secure
 	jexec <<EOF
 echo "host    all             all             0.0.0.0/0               trust" >> /var/db/postgres/data${PG_VER}/pg_hba.conf
+echo "host    all             all             ::/0                    trust" >> /var/db/postgres/data${PG_VER}/pg_hba.conf
 EOF
 
 	# Start postgres
@@ -335,6 +339,7 @@ EOF
 	# or this:
 	#/usr/local/etc/rc.d/gitlab restart
 
+	set +o xtrace
 	# 7. Nginx
 	jail_v6_active=0
 
@@ -351,10 +356,8 @@ EOF
 	elif [ ${jail_has_v4} -eq 0 -a ${jail_has_v6} -eq 1 ]; then
 		# v6 only
 		jexec <<EOF
-listen 0.0.0.0:80
 cp -a /usr/local/www/gitlab-ce/lib/support/nginx/gitlab /usr/local/www/gitlab-ce/lib/support/nginx/gitlab.bak
-sed -i '' -e "s/^.*listen 0.0.0.0:80 default_server;/g" /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
-#sed -i '' -e 's/^.*listen 0.0.0.0:80 default_server;$//g' /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
+sed -i '' -e "s/^.*listen 0.0.0.0:80 / # listen 0.0.0.0:80;/g" /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
 EOF
 	fi
 
@@ -385,7 +388,6 @@ JEOF
 chown git:git /usr/local/git/.ssh/config
 ${ECHO} "${N1_COLOR}non-standart ssh port saved in: ${N2_COLOR}/usr/local/git/.ssh/config${N0_COLOR}"
 EOF
-	fi
 
 #	# Create .gitlab_shell_secret symlink
 #	jexec ln -s /usr/local/www/gitlab-ce/.gitlab_shell_secret /usr/local/share/gitlab-shell/.gitlab_shell_secret
@@ -400,12 +402,12 @@ EOF
 #sed -i '' -e 's/^.*port: 80 .*$/    port: 10080/g' /usr/local/www/gitlab-ce/config/gitlab.yml
 ## gitlab ssh config
 ##sed -i '' -e 's/^.*ssh_port: 22$/    ssh_port: 2223/g' /usr/local/www/gitlab-ce/config/gitlab.yml
-
+fi
 
 	set +o xtrace
 	# postmessage
 	for i in ${jail_ip}; do
-		${ECHO} "	GitLab URL	: http://${myip}"
+		${ECHO} "	GitLab URL	: http://${i}"
 	done
 
 	${CAT_CMD} <<EOF
