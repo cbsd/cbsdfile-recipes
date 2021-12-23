@@ -1,0 +1,42 @@
+# Install rabbitmq jail
+quiet=0
+
+jail_rabbitmq1()
+{
+	ip4_addr=DHCP
+	host_hostname="${jname}.my.domain"
+	ver="native"
+
+	pkg_bootstrap=1
+	pkglist="security/ca_root_nss"
+
+	# jail options
+	allow_raw_sockets=1
+	allow_sysvipc=1
+	allow_mlock=1
+}
+
+preup_memcached()
+{
+	# forms-based module, install it first
+	module mode=install forms-rabbitmq
+}
+
+postcreate_rabbitmq1()
+{
+	local _ip
+
+	# turn off unnecessary services
+	sysrc \
+		syslogd_enable="NO" \
+		cron_enable="NO" \
+		sendmail_enable="NO" \
+		sendmail_submit_enable="NO"\
+		sendmail_outbound_enable="NO" \
+		sendmail_msp_queue_enable="NO" \
+		syslogd_enable="NO" \
+		clear_tmp_enable="YES"
+
+	forms module=memcached inter=0
+
+}
