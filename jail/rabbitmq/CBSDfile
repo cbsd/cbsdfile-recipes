@@ -1,7 +1,7 @@
 # Install rabbitmq jail
 quiet=0
 
-jail_rabbitmq1()
+jail_rabbitmq()
 {
 	ip4_addr=DHCP
 	host_hostname="${jname}.my.domain"
@@ -16,13 +16,13 @@ jail_rabbitmq1()
 	allow_mlock=1
 }
 
-preup_memcached()
+preup_rabbitmq()
 {
 	# forms-based module, install it first
 	module mode=install forms-rabbitmq
 }
 
-postcreate_rabbitmq1()
+postcreate_rabbitmq()
 {
 	local _ip
 
@@ -37,6 +37,6 @@ postcreate_rabbitmq1()
 		syslogd_enable="NO" \
 		clear_tmp_enable="YES"
 
-	forms module=memcached inter=0
+	forms module=rabbitmq inter=0
 
 }
