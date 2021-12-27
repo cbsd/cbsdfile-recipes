@@ -52,8 +52,12 @@ echo "tests found: ${env_path}/tests: ${tests_all}" >> ${log_file} 2>&1
 
 cur_tests=1
 
+MY_TEST=$( find ${env_path}/tests/ -type f -exec basename {} \;  | sort | xargs )
+echo "Test list:: ${MY_TEST}"
+
 set -e
-find ${env_path}/tests/ -type f -exec basename {} \;  | sort | while read _test; do
+
+for _test in ${MY_TEST}; do
 	echo " --- ${jname} tests: ${cur_tests}/${tests_all}: ${_test} ---" | tee -a ${log_file} 2>&1
 	${env_path}/tests/${_test} >> ${log_file} 2>&1
 	ret=$?
@@ -61,7 +65,7 @@ find ${env_path}/tests/ -type f -exec basename {} \;  | sort | while read _test;
 		echo " >> ${_tests}: failed <<"
 		exit 1
 	fi
-	echo
+	echo "passed"
 	cur_tests=$(( cur_tests + 1 ))
 done
 set +e
