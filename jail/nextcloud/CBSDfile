@@ -1,0 +1,147 @@
+# Install nextcloud jail with static config
+# with defined a RW share that is accessible without authentication !
+
+PG_VER=13
+
+quiet=0
+
+
+jail_nextcloud()
+{
+
+	# to overwrite default settings:
+	# export H_POSTGRES_VER=13 H_SHARED_BUFFERS=256MB ..
+
+	# use 'cbsd up ip4_addr=XXXX' for overwrite via args
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+#	H_SSLCOUNTRY=""
+#	H_SSLSTATE=""
+#	H_SSLLOCATION=""
+#	H_SSLMAIL=""
+	H_DBPASSWD=$( random_password_gen -l 30 )
+	H_SSLPASSWD=$( random_password_gen -l 30 )
+	H_NCADMIN=ncadmin
+	H_NCPASSWD=$( random_password_gen -l 30 )
+
+	# use 'cbsd up ver=12.2' for overwrite via args
+	ver="native"
+
+	pkglist=`tr '\n' ' ' < nextcloud_pkg_list`
+
+	# set interface=0 when IP not manage by CBSD
+	interface="auto"
+
+	baserw=1
+
+	# jail options
+	allow_raw_sockets=1
+	allow_sysvipc=1
+	allow_raw_sockets=1
+	allow_nullfs=1
+	allow_procfs=1
+	allow_linprocfs=1
+	allow_linsysfs=1
+	allow_tmpfs=1
+	allow_mount=1
+	allow_zfs=1
+	allow_mlock=1
+
+	childrenmax=100
+
+	pkg_bootstrap=1
+}
+
+postcreate_nextcloud()
+{
+	local _ip
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+
+	# turn off unnecessary services
+	sysrc \
+		syslogd_flags="-ss" \
+		sendmail_enable="NO" \
+		sendmail_submit_enable="NO" \
+		sendmail_outbound_enable="NO" \
+		sendmail_msp_queue_enable="NO" \
+		cron_enable="NO" \
+		nginx_enable="YES" \
+		zfs_enable="YES" \
+		postgresql_enable="YES" \
+		redis_enable="YES" \
+		php_fpm_enable="YES"
+
+	# cbsd jexec
+	jexec <<EOF
+mkdir -p /var/storage
+mkdir -p /var/db/postgres
+mkdir -p /usr/local/www/nextcloud/config
+mkdir -p /usr/local/www/nextcloud/themes
+
+chown -R www:www /var/storage
+
+# php-fpm log
+touch /var/log/php-fpm.log
+chown www:www /var/log/php-fpm.log
+
+# PostgreSQL
+chown -R postgres:postgres /var/db/postgres
+service postgresql initdb
+echo "host    all             all             ${_ip}/32           trust" >> /var/db/postgres/data${PG_VER}/pg_hba.conf
+service postgresql start
+psql -d postgres -U postgres -c "CREATE USER nextcloud WITH PASSWORD '${H_DBPASSWD}'"
+psql -d postgres -U postgres -c "CREATE DATABASE nextcloud OWNER nextcloud"
+# TODO: add autovacum/reindex & cie
+# https://vermaden.wordpress.com/2020/01/04/nextcloud-17-on-freebsd-12-1/
+
+# Nginx
+chown -R www:www /var/log/nginx
+
+# generate SSL
+mkdir -p /usr/local/etc/nginx/ssl
+cd /usr/local/etc/nginx/ssl
+openssl genrsa -des3 -out server.key -passout pass:${H_SSLPASSWD} 2048
+openssl req -new -key server.key \
+		-passin pass:${H_SSLPASSWD} -out server.csr \
+		-subj "/C=${H_SSLCOUNTRY}/ST=${H_SSLSTATE}/L=${H_SSLLOCATION}/CN=nextcloud.domain.com/emailAddress=${H_SSLMAIL}"
+cp server.key server.key.orig
+openssl rsa -in server.key.orig -out server.key -passin pass:${H_SSLPASSWD}
+openssl x509 -req -days 7000 -in server.csr -signkey server.key -out server.crt
+ln -s /usr/local/etc/nginx/ssl/server.crt /usr/local/etc/nginx/ssl/ssl-bundle.crt
+
+# nextcloud
+# Fetch and install nextcloud
+fetch https://download.nextcloud.com/server/releases/latest.tar.bz2 -o /tmp/latest.tar.bz2
+fetch https://download.nextcloud.com/server/releases/latest.tar.bz2.sha512 -o /tmp/latest.tar.bz2.sha512
+cd /tmp && shasum -a 512 -c /tmp/latest.tar.bz2.sha512
+tar -xf /tmp/latest.tar.bz2 -C /usr/local/www
+chown -R www:www /usr/local/www/nextcloud
+
+# configure redis
+sed -i '' -e "s/^port .*/port 0/" -e "s|^# unixsocket .*|unixsocket /var/run/redis/redis.sock|" -e "s|^# unixsocketperm.*|unixsocketperm 770|" /usr/local/etc/redis.conf
+pw usermod www -G redis
+service redis start
+
+# configure nextcloud
+su -m www -c 'php /usr/local/www/nextcloud/occ maintenance:install --database=pgsql --database-name=nextcloud --database-user=nextcloud --database-pass="${H_DBPASSWD}" --database-host=localhost --admin-user="${H_NCADMIN}" --admin-pass="${H_NCPASSWD}" --data-dir=/var/storage'
+su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains 1 --value=${_ip}'
+su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains 2 --value="nextcloud.mydomain.com"'
+
+su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set redis host --value="/var/run/redis/redis.sock"'
+su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set redis port --value=0 --type=integer'
+#su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.local --value="\OC\Memcache\APCu"'
+# TODO: fix error with APCu. But normally apc.enable_cli=1 is alread setted...
+su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.local --value="\OC\Memcache\Redis"'
+su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.locking --value="\OC\Memcache\Redis"'
+
+su -m www -c 'php /usr/local/www/nextcloud/occ db:add-missing-indices'
+su -m www -c 'php /usr/local/www/nextcloud/occ db:convert-filecache-bigint'
+EOF
+
+	cat <<EOF
+	Nextcloud admin login:				"${H_NCADMIN}"
+	Nextcloud admin passowrd:			"${H_NCPASSWD}"
+	PostgreSQL postgres password:	"${H_DBPASSWD}"
+	SSL password:									"${H_SSLPASSWD}"
+EOF
+}
