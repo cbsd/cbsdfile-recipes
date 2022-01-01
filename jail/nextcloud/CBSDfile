@@ -80,10 +80,6 @@ mkdir -p /usr/local/www/nextcloud/themes
 
 chown -R www:www /var/storage
 
-# php-fpm log
-touch /var/log/php-fpm.log
-chown www:www /var/log/php-fpm.log
-
 # PostgreSQL
 chown -R postgres:postgres /var/db/postgres
 service postgresql initdb
@@ -93,6 +89,16 @@ psql -d postgres -U postgres -c "CREATE USER nextcloud WITH PASSWORD '${H_DBPASS
 psql -d postgres -U postgres -c "CREATE DATABASE nextcloud OWNER nextcloud"
 # TODO: add autovacum/reindex & cie
 # https://vermaden.wordpress.com/2020/01/04/nextcloud-17-on-freebsd-12-1/
+
+# php-fpm log
+touch /var/log/php-fpm.log
+chown www:www /var/log/php-fpm.log
+service php-fpm start
+
+# configure redis
+sed -i '' -e "s/^port .*/port 0/" -e "s|^# unixsocket .*|unixsocket /var/run/redis/redis.sock|" -e "s|^# unixsocketperm.*|unixsocketperm 770|" /usr/local/etc/redis.conf
+pw usermod www -G redis
+service redis start
 
 # Nginx
 chown -R www:www /var/log/nginx
@@ -109,6 +115,8 @@ openssl rsa -in server.key.orig -out server.key -passin pass:${H_SSLPASSWD}
 openssl x509 -req -days 7000 -in server.csr -signkey server.key -out server.crt
 ln -s /usr/local/etc/nginx/ssl/server.crt /usr/local/etc/nginx/ssl/ssl-bundle.crt
 
+service nginx start
+
 # nextcloud
 # Fetch and install nextcloud
 fetch https://download.nextcloud.com/server/releases/latest.tar.bz2 -o /tmp/latest.tar.bz2
@@ -117,13 +125,12 @@ cd /tmp && shasum -a 512 -c /tmp/latest.tar.bz2.sha512
 tar -xf /tmp/latest.tar.bz2 -C /usr/local/www
 chown -R www:www /usr/local/www/nextcloud
 
-# configure redis
-sed -i '' -e "s/^port .*/port 0/" -e "s|^# unixsocket .*|unixsocket /var/run/redis/redis.sock|" -e "s|^# unixsocketperm.*|unixsocketperm 770|" /usr/local/etc/redis.conf
-pw usermod www -G redis
-service redis start
-
 # configure nextcloud
 su -m www -c 'php /usr/local/www/nextcloud/occ maintenance:install --database=pgsql --database-name=nextcloud --database-user=nextcloud --database-pass="${H_DBPASSWD}" --database-host=localhost --admin-user="${H_NCADMIN}" --admin-pass="${H_NCPASSWD}" --data-dir=/var/storage'
+
+su -m www -c 'php /usr/local/www/nextcloud/occ db:add-missing-indices'
+su -m www -c 'php /usr/local/www/nextcloud/occ db:convert-filecache-bigint'
+
 su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains 1 --value=${_ip}'
 su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains 2 --value="nextcloud.mydomain.com"'
 
@@ -131,11 +138,13 @@ su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set redis host --va
 su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set redis port --value=0 --type=integer'
 #su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.local --value="\OC\Memcache\APCu"'
 # TODO: fix error with APCu. But normally apc.enable_cli=1 is alread setted...
-su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.local --value="\OC\Memcache\Redis"'
-su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.locking --value="\OC\Memcache\Redis"'
+#su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.local --value="\OC\Memcache\Redis"'
+#su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.locking --value="\OC\Memcache\Redis"'
+sed -i '' '$d' /usr/local/www/nextcloud/config/config.php
+echo "  'memcache.local' => '\\OC\\Memcache\\APCu'," >> /usr/local/www/nextcloud/config/config.php
+echo "  'memcache.locking' => '\\OC\\Memcache\\Redis'," >> /usr/local/www/nextcloud/config/config.php
+echo ");" >> /usr/local/www/nextcloud/config/config.php
 
-su -m www -c 'php /usr/local/www/nextcloud/occ db:add-missing-indices'
-su -m www -c 'php /usr/local/www/nextcloud/occ db:convert-filecache-bigint'
 EOF
 
 	cat <<EOF
