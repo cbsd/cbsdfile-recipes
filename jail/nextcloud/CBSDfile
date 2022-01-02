@@ -93,6 +93,7 @@ psql -d postgres -U postgres -c "CREATE DATABASE nextcloud OWNER nextcloud"
 # php-fpm log
 touch /var/log/php-fpm.log
 chown www:www /var/log/php-fpm.log
+sed -i '' -e "s/^;env/env/" /usr/local/etc/php-fpm.d/www.conf
 service php-fpm start
 
 # configure redis
@@ -136,15 +137,13 @@ su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains
 
 su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set redis host --value="/var/run/redis/redis.sock"'
 su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set redis port --value=0 --type=integer'
-#su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.local --value="\OC\Memcache\APCu"'
-# TODO: fix error with APCu. But normally apc.enable_cli=1 is alread setted...
-#su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.local --value="\OC\Memcache\Redis"'
-#su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.locking --value="\OC\Memcache\Redis"'
-sed -i '' '$d' /usr/local/www/nextcloud/config/config.php
-echo "  'memcache.local' => '\\OC\\Memcache\\APCu'," >> /usr/local/www/nextcloud/config/config.php
-echo "  'memcache.locking' => '\\OC\\Memcache\\Redis'," >> /usr/local/www/nextcloud/config/config.php
-echo ");" >> /usr/local/www/nextcloud/config/config.php
 
+sed -i '' '$ d' /usr/local/www/nextcloud/config/config.php
+echo "  memcache.locking => '\\\OC\\\Memcache\\\Redis'," >> /usr/local/www/nextcloud/config/config.php
+echo "  memcache.local => '\\\OC\\\Memcache\\\APCu'," >> /usr/local/www/nextcloud/config/config.php
+echo ");" >> /usr/local/www/nextcloud/config/config.php
+#su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.locking --value="\OC\Memcache\Redis"'
+#su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.local --value="\OC\Memcache\APCu"'
 EOF
 
 	cat <<EOF
