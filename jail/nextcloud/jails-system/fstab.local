@@ -1,0 +1,4 @@
+zroot/nextcloud/config /usr/local/www/nextcloud/config zfs rw 0 0
+zroot/nextcloud/themes /usr/local/www/nextcloud/themes zfs rw 0 0
+zroot/nextcloud/database /var/db/postgres zfs rw 0 0
+zroot/storage /var/storage zfs rw 0 0
