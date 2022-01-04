@@ -1,14 +1,17 @@
-# Install nextcloud jail with static config
 # with defined a RW share that is accessible without authentication !
 
+# Default Postgresql version ( e.g.: /usr/ports/databases/postgresql${PG_VER}-server )
 PG_VER=13
+
+# used to configure nginx
+jail_has_v4=0
+jail_has_v6=0
+jail_ips=
 
 quiet=0
 
-
 jail_nextcloud()
 {
-
 	# to overwrite default settings:
 	# export H_POSTGRES_VER=13 H_SHARED_BUFFERS=256MB ..
 
@@ -27,7 +30,11 @@ jail_nextcloud()
 	# use 'cbsd up ver=12.2' for overwrite via args
 	ver="native"
 
-	pkglist=`tr '\n' ' ' < nextcloud_pkg_list`
+#	pkglist=`tr '\n' ' ' < nextcloud_pkg_list`
+
+#	for CBSD 13.0.21+ we can use 'pkglist' file in CBSDfile directory or
+#	pkglist can be file here:
+	pkglist="nextcloud_pkg_list"
 
 	# set interface=0 when IP not manage by CBSD
 	interface="auto"
@@ -52,12 +59,63 @@ jail_nextcloud()
 	pkg_bootstrap=1
 }
 
+# TODO: generic function - should be moved to CBSD
+# export:
+# jail_has_v4
+# jail_has_v6
+# jail_ip
+get_jail_ips()
+{
+	local _ip i
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+
+	[ -z "${_ip}" ] && err 1 "${N1_COLOR}${CBSD_APP}: unable to determine jail IPs: ${N2_COLOR}${jname}${N0_COLOR}"
+
+	OIFS="${IFS}"
+	IFS=","
+	for i in ${_ip}; do
+		IFS="${OIFS}"
+		myip=
+		iptype ${i}
+		case $? in
+			1)
+				jail_has_v4=1
+				# ipv4, no cast
+				if [ -z "${jail_ip}" ]; then
+					jail_ip="${i}"
+				else
+					jail_ip="${jail_ip} ${i}"
+				fi
+				;;
+			2)
+				# ipv6, add brackets
+				jail_has_v6=1
+				if [ -z "${jail_ip}" ]; then
+					jail_ip="[${i}]"
+				else
+					jail_ip="${jail_ip} [${i}]"
+				fi
+				;;
+			*)
+				[ -z "${_ip}" ] && err 1 "${N1_COLOR}${CBSD_APP}: unknown jail IP type: ${N2_COLOR}${i}${N0_COLOR}"
+				;;
+		esac
+		IFS=","
+	done
+
+	IFS="${OIFS}"
+	return 0
+}
+
 postcreate_nextcloud()
 {
 	local _ip
-	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
 
-	# turn off unnecessary services
+	set +o xtrace
+	set +o errexit
+	get_jail_ips
+
+	# turn off unnecessary services, enable nginx/php-fpm/postgresql/redis
 	sysrc \
 		syslogd_flags="-ss" \
 		sendmail_enable="NO" \
@@ -71,37 +129,76 @@ postcreate_nextcloud()
 		redis_enable="YES" \
 		php_fpm_enable="YES"
 
+	# Configure Postgres
+	# save password in root .pgpassc
+	jexec <<EOF
+echo "127.0.0.1:5432:nextcloud:nextcloud:${DB_PASSWORD}" > /root/.pgpass
+echo "::1:5432:nextcloud:nextcloud:${DB_PASSWORD}" >> /root/.pgpass
+chmod 0600 /root/.pgpass
+EOF
+	echo
+	${ECHO} "${H3_COLOR}Postgres nextcloud password saved in: ${N2_COLOR}/root/.pgpass${N0_COLOR}"
+	echo
+
 	# cbsd jexec
 	jexec <<EOF
-mkdir -p /var/storage
-mkdir -p /var/db/postgres
-mkdir -p /usr/local/www/nextcloud/config
-mkdir -p /usr/local/www/nextcloud/themes
-
+mkdir -p /var/storage /var/db/postgres /local/www/nextcloud/config /usr/local/www/nextcloud/themes
 chown -R www:www /var/storage
 
 # PostgreSQL
 chown -R postgres:postgres /var/db/postgres
 service postgresql initdb
-echo "host    all             all             ${_ip}/32           trust" >> /var/db/postgres/data${PG_VER}/pg_hba.conf
+
+echo "host    all             all             0.0.0.0/0               md5" >> /var/db/postgres/data${PG_VER}/pg_hba.conf
+echo "host    all             all             ::/0                    md5" >> /var/db/postgres/data${PG_VER}/pg_hba.conf
+
 service postgresql start
+EOF
+
+	sleep 2
+	# tests:
+	set -o errexit
+	tests/10_postgres_port.sh
+	set +o errexit
+
+	jexec <<EOF
 psql -d postgres -U postgres -c "CREATE USER nextcloud WITH PASSWORD '${H_DBPASSWD}'"
 psql -d postgres -U postgres -c "CREATE DATABASE nextcloud OWNER nextcloud"
-# TODO: add autovacum/reindex & cie
-# https://vermaden.wordpress.com/2020/01/04/nextcloud-17-on-freebsd-12-1/
+EOF
 
-# php-fpm log
+	# tests
+	set -o errexit
+	tests/20_postgres_cred.sh
+	set +o errexit
+
+## TODO: add autovacum/reindex & cie
+## https://vermaden.wordpress.com/2020/01/04/nextcloud-17-on-freebsd-12-1/
+#
+	# Configure Redis
+	jexec <<EOF
+#
+sed -i '' -e "s/^port .*/port 0/" -e "s|^# unixsocket .*|unixsocket /var/run/redis/redis.sock|" -e "s|^# unixsocketperm.*|unixsocketperm 770|" /usr/local/etc/redis.conf
+pw usermod www -G redis
+service redis start
+EOF
+
+	# tests
+	set -o errexit
+	tests/30_redis_process.sh
+	tests/40_redis_sock.sh
+	set +o errexit
+
+	# Configure PHP-FPM
+	# php-fpm log
+	jexec <<EOF
 touch /var/log/php-fpm.log
 chown www:www /var/log/php-fpm.log
 sed -i '' -e "s/^;env/env/" /usr/local/etc/php-fpm.d/www.conf
 service php-fpm start
+EOF
 
-# configure redis
-sed -i '' -e "s/^port .*/port 0/" -e "s|^# unixsocket .*|unixsocket /var/run/redis/redis.sock|" -e "s|^# unixsocketperm.*|unixsocketperm 770|" /usr/local/etc/redis.conf
-pw usermod www -G redis
-service redis start
-
-# Nginx
+	# Configure Nginx
+	jexec <<EOF
 chown -R www:www /var/log/nginx
 
 # generate SSL
@@ -114,12 +211,18 @@ openssl req -new -key server.key \
 cp server.key server.key.orig
 openssl rsa -in server.key.orig -out server.key -passin pass:${H_SSLPASSWD}
 openssl x509 -req -days 7000 -in server.csr -signkey server.key -out server.crt
-ln -s /usr/local/etc/nginx/ssl/server.crt /usr/local/etc/nginx/ssl/ssl-bundle.crt
-
+ln -sf /usr/local/etc/nginx/ssl/server.crt /usr/local/etc/nginx/ssl/ssl-bundle.crt
 service nginx start
+EOF
 
-# nextcloud
-# Fetch and install nextcloud
+	# tests
+	set -o errexit
+	tests/50_nginx_process.sh
+	tests/55_nginx_port.sh
+	set +o errexit
+
+	# Fetch and install nextcloud
+	jexec <<EOF
 fetch https://download.nextcloud.com/server/releases/latest.tar.bz2 -o /tmp/latest.tar.bz2
 fetch https://download.nextcloud.com/server/releases/latest.tar.bz2.sha512 -o /tmp/latest.tar.bz2.sha512
 cd /tmp && shasum -a 512 -c /tmp/latest.tar.bz2.sha512
@@ -132,7 +235,6 @@ su -m www -c 'php /usr/local/www/nextcloud/occ maintenance:install --database=pg
 su -m www -c 'php /usr/local/www/nextcloud/occ db:add-missing-indices'
 su -m www -c 'php /usr/local/www/nextcloud/occ db:convert-filecache-bigint'
 
-su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains 1 --value=${_ip}'
 su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains 2 --value="nextcloud.mydomain.com"'
 
 su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set redis host --value="/var/run/redis/redis.sock"'
@@ -146,10 +248,26 @@ echo ");" >> /usr/local/www/nextcloud/config/config.php
 #su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.local --value="\OC\Memcache\APCu"'
 EOF
 
-	cat <<EOF
-	Nextcloud admin login:				"${H_NCADMIN}"
-	Nextcloud admin passowrd:			"${H_NCPASSWD}"
+	for _ip in ${jail_ip}; do
+		echo "jexec jname=${jname} cmd=\"su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains 1 --value=${_ip}'\""
+		jexec jname=${jname} cmd="su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains 1 --value=${_ip}'"
+	done
+
+
+	set -o errexit
+	tests/70_login.sh
+	set +o errexit
+
+	# postmessage
+	${ECHO} "	Nextcloud URL:	https://nextcloud.mydomain.com"
+	for i in ${jail_ip}; do
+		${ECHO} "	Nextcloud URL:	https://${i}"
+	done
+
+	${CAT_CMD} <<EOF
+	Nextcloud admin login:		"${H_NCADMIN}"
+	Nextcloud admin password:	"${H_NCPASSWD}"
 	PostgreSQL postgres password:	"${H_DBPASSWD}"
-	SSL password:									"${H_SSLPASSWD}"
+	SSL password:			"${H_SSLPASSWD}"
 EOF
 }
