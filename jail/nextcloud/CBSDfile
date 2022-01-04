@@ -30,11 +30,11 @@ jail_nextcloud()
 	# use 'cbsd up ver=12.2' for overwrite via args
 	ver="native"
 
-#	pkglist=`tr '\n' ' ' < nextcloud_pkg_list`
+	# for CBSD < 13.0.21
+	pkglist=`tr '\n' ' ' < nextcloud_pkg_list`
 
-#	for CBSD 13.0.21+ we can use 'pkglist' file in CBSDfile directory or
-#	pkglist can be file here:
-	pkglist="nextcloud_pkg_list"
+	# for CBSD 13.0.21+ we can use 'pkglist' file in CBSDfile directory or alternative file name:
+	# pkglist="nextcloud_pkg_list"
 
 	# set interface=0 when IP not manage by CBSD
 	interface="auto"
