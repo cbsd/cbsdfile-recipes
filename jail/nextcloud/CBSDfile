@@ -205,7 +205,6 @@ EOF
 	elif [ ${jail_has_v4} -eq 1 -a ${jail_has_v6} -eq 0 ]; then
 		# v4 only
 		jexec <<EOF
-#sed -i '' -e  "s/^.*listen \*:/# listen \*:;/g" /usr/local/etc/nginx/nginx.conf
 sed -i '' -e "s/^.*listen \\\[::\\\]/  # listen [::]/g" /usr/local/etc/nginx/nginx.conf
 EOF
 	elif [ ${jail_has_v4} -eq 0 -a ${jail_has_v6} -eq 1 ]; then
