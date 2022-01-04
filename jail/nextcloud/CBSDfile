@@ -67,6 +67,7 @@ jail_nextcloud()
 get_jail_ips()
 {
 	local _ip i
+
 	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
 
 	[ -z "${_ip}" ] && err 1 "${N1_COLOR}${CBSD_APP}: unable to determine jail IPs: ${N2_COLOR}${jname}${N0_COLOR}"
@@ -198,6 +199,22 @@ service php-fpm start
 EOF
 
 	# Configure Nginx
+	# disable v6, todo: gets IP
+	if [ ${jail_has_v4} -eq 1 -a ${jail_has_v6} -eq 1 ]; then
+		# do nothing
+	elif [ ${jail_has_v4} -eq 1 -a ${jail_has_v6} -eq 0 ]; then
+		# v4 only
+		jexec <<EOF
+#sed -i '' -e  "s/^.*listen \*:/# listen \*:;/g" /usr/local/etc/nginx/nginx.conf
+sed -i '' -e "s/^.*listen \\\[::\\\]/  # listen [::]/g" /usr/local/etc/nginx/nginx.conf
+EOF
+	elif [ ${jail_has_v4} -eq 0 -a ${jail_has_v6} -eq 1 ]; then
+		# v6 only
+		jexec <<EOF
+sed -i '' -e "s/^.*listen \\\*:/# listen *:;/g" /usr/local/etc/nginx/nginx.conf
+EOF
+	fi
+
 	jexec <<EOF
 chown -R www:www /var/log/nginx
 
