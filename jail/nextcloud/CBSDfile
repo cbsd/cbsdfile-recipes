@@ -2,6 +2,11 @@
 
 # Default Postgresql version ( e.g.: /usr/ports/databases/postgresql${PG_VER}-server )
 PG_VER=13
+# Default PHP version ( e.g.: /usr/ports/lang/php${PHP_VER} )
+PHP_VER="74"
+# to overwrite NEXTCLOUD FQDN servername from env/args:
+#  env H_NEXTCLOUD_FQDN=my.example.ru cbsd up
+[ -z "${H_NEXTCLOUD_FQDN}" ] && H_NEXTCLOUD_FQDN="nextcloud.mydomain.com"
 
 # used to configure nginx
 jail_has_v4=0
@@ -223,7 +228,7 @@ cd /usr/local/etc/nginx/ssl
 openssl genrsa -des3 -out server.key -passout pass:${H_SSLPASSWD} 2048
 openssl req -new -key server.key \
 		-passin pass:${H_SSLPASSWD} -out server.csr \
-		-subj "/C=${H_SSLCOUNTRY}/ST=${H_SSLSTATE}/L=${H_SSLLOCATION}/CN=nextcloud.domain.com/emailAddress=${H_SSLMAIL}"
+		-subj "/C=${H_SSLCOUNTRY}/ST=${H_SSLSTATE}/L=${H_SSLLOCATION}/CN=${H_NEXTCLOUD_FQDN}/emailAddress=${H_SSLMAIL}"
 cp server.key server.key.orig
 openssl rsa -in server.key.orig -out server.key -passin pass:${H_SSLPASSWD}
 openssl x509 -req -days 7000 -in server.csr -signkey server.key -out server.crt
@@ -251,7 +256,7 @@ su -m www -c 'php /usr/local/www/nextcloud/occ maintenance:install --database=pg
 su -m www -c 'php /usr/local/www/nextcloud/occ db:add-missing-indices'
 su -m www -c 'php /usr/local/www/nextcloud/occ db:convert-filecache-bigint'
 
-su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains 2 --value="nextcloud.mydomain.com"'
+su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains 2 --value="${H_NEXTCLOUD_FQDN}"'
 
 su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set redis host --value="/var/run/redis/redis.sock"'
 su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set redis port --value=0 --type=integer'
@@ -275,7 +280,7 @@ EOF
 	set +o errexit
 
 	# postmessage
-	${ECHO} "	Nextcloud URL:	https://nextcloud.mydomain.com"
+	${ECHO} "	Nextcloud URL:	https://${H_NEXTCLOUD_FQDN}"
 	for i in ${jail_ip}; do
 		${ECHO} "	Nextcloud URL:	https://${i}"
 	done
