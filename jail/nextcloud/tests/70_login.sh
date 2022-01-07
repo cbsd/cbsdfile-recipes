@@ -13,13 +13,13 @@ GREP_VAL="body-login"
 
 case "${ip4_addr}" in
 	*\.*\.*\.*)
-		printf "Check for login page http://${ip4_addr}/login ( filter cmd: ${GREP_VAL} )..." 2>&1
-		${CURL_CMD} -k --no-progress-meter -L http://${ip4_addr}/login | grep "${GREP_VAL}"
+		printf "Check for login page https://${ip4_addr}/login ( filter cmd: ${GREP_VAL} )..." 2>&1
+		${CURL_CMD} -k --no-progress-meter -L https://${ip4_addr}/login | grep "${GREP_VAL}"
 		ret=$?
 		;;
 	*:*)
-		printf "Check for login page http://[${ip4_addr}]/login ( filter cmd: ${GREP_VAL} )..." 2>&1
-		${CURL_CMD} -k -6 --no-progress-meter -L http://[${ip4_addr}]/login | grep "${GREP_VAL}"
+		printf "Check for login page https://[${ip4_addr}]/login ( filter cmd: ${GREP_VAL} )..." 2>&1
+		${CURL_CMD} -k -6 --no-progress-meter -L https://[${ip4_addr}]/login | grep "${GREP_VAL}"
 		ret=$?
 		;;
 esac
