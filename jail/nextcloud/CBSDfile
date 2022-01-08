@@ -195,8 +195,8 @@ EOF
 	# Configure PHP-FPM
 	# php-fpm log
 	jexec <<EOF
-touch /var/log/php-fpm.log
-chown www:www /var/log/php-fpm.log
+touch /var/log/php-fpm.log /var/log/php.log
+chown www:www /var/log/php-fpm.log /var/log/php.log
 sed -i '' -e "s/^;env/env/" /usr/local/etc/php-fpm.d/www.conf
 service php-fpm start
 EOF
