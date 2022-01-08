@@ -208,13 +208,17 @@ EOF
 	elif [ ${jail_has_v4} -eq 1 -a ${jail_has_v6} -eq 0 ]; then
 		# v4-only
 		# todo: to poststart hook
-		jexec jname=${jname} cmd="echo \"listen *:80;\" > /usr/local/etc/nginx/listen80.conf"
-		jexec jname=${jname} cmd="echo \"listen *:443 ssl http2;\" > /usr/local/etc/nginx/listen443.conf"
+		jexec <<EOF
+echo "listen *:80;" > /usr/local/etc/nginx/listen80.conf
+echo "listen *:443 ssl http2;" > /usr/local/etc/nginx/listen443.conf
+EOF
 	elif [ ${jail_has_v4} -eq 0 -a ${jail_has_v6} -eq 1 ]; then
 		# v6-only
 		# todo: to poststart hook
-		jexec jname=${jname} cmd="echo \"listen [::]:80;\" > /usr/local/etc/nginx/listen80.conf"
-		jexec jname=${jname} cmd="echo \"listen [::]:443 ssl http2;\" > /usr/local/etc/nginx/listen443.conf"
+		jexec <<EOF
+echo "listen [::]:80;" > /usr/local/etc/nginx/listen80.conf
+echo "listen [::]:443 ssl http2;" > /usr/local/etc/nginx/listen443.conf
+EOF
 	fi
 
 	jexec <<EOF
