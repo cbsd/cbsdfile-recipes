@@ -1,8 +1,10 @@
 # with defined a RW share that is accessible without authentication !
 
 # Default Postgresql version ( e.g.: /usr/ports/databases/postgresql${PG_VER}-server )
+# see nextcloud_pkg_list file
 PG_VER=13
 # Default PHP version ( e.g.: /usr/ports/lang/php${PHP_VER} )
+# see nextcloud_pkg_list file
 PHP_VER="74"
 # to overwrite NEXTCLOUD FQDN servername from env/args:
 #  env H_NEXTCLOUD_FQDN=my.example.ru cbsd up
@@ -35,11 +37,7 @@ jail_nextcloud()
 	# use 'cbsd up ver=12.2' for overwrite via args
 	ver="native"
 
-	# for CBSD < 13.0.21
-	pkglist=`tr '\n' ' ' < nextcloud_pkg_list`
-
-	# for CBSD 13.0.21+ we can use 'pkglist' file in CBSDfile directory or alternative file name:
-	# pkglist="nextcloud_pkg_list"
+	pkglist=$( ${SED_CMD} -e "s:%%PG_VER%%:${PG_VER}:g" -e "s:%%PHP_VER%%:${PHP_VER}:g" | ${TR_CMD} '\n' ' ' < nextcloud_pkg_list )
 
 	# set interface=0 when IP not manage by CBSD
 	interface="auto"
@@ -208,15 +206,15 @@ EOF
 	if [ ${jail_has_v4} -eq 1 -a ${jail_has_v6} -eq 1 ]; then
 		# do nothing
 	elif [ ${jail_has_v4} -eq 1 -a ${jail_has_v6} -eq 0 ]; then
-		# v4 only
-		jexec <<EOF
-sed -i '' -e "s/^.*listen \\\[::\\\]/  # listen [::]/g" /usr/local/etc/nginx/nginx.conf
-EOF
+		# v4-only
+		# todo: to poststart hook
+		jexec jname=${jname} cmd="echo \"listen *:80;\" > /usr/local/etc/nginx/listen80.conf"
+		jexec jname=${jname} cmd="echo \"listen *:443 ssl http2;\" > /usr/local/etc/nginx/listen443.conf"
 	elif [ ${jail_has_v4} -eq 0 -a ${jail_has_v6} -eq 1 ]; then
-		# v6 only
-		jexec <<EOF
-sed -i '' -e "s/^.*listen \\\*:/# listen *:;/g" /usr/local/etc/nginx/nginx.conf
-EOF
+		# v6-only
+		# todo: to poststart hook
+		jexec jname=${jname} cmd="echo \"listen [::]:80;\" > /usr/local/etc/nginx/listen80.conf"
+		jexec jname=${jname} cmd="echo \"listen [::]:443 ssl http2;\" > /usr/local/etc/nginx/listen443.conf"
 	fi
 
 	jexec <<EOF
