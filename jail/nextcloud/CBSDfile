@@ -10,12 +10,13 @@ PHP_VER="74"
 #  env H_NEXTCLOUD_FQDN=my.example.ru cbsd up
 [ -z "${H_NEXTCLOUD_FQDN}" ] && H_NEXTCLOUD_FQDN="nextcloud.mydomain.com"
 
+quiet=0
+
+# deprecated for CBSD 13.0.21+
 # used to configure nginx
 jail_has_v4=0
 jail_has_v6=0
 jail_ips=
-
-quiet=0
 
 jail_nextcloud()
 {
@@ -62,7 +63,8 @@ jail_nextcloud()
 	pkg_bootstrap=1
 }
 
-# TODO: generic function - should be moved to CBSD
+
+# deprecated for CBSD 13.0.21+
 # export:
 # jail_has_v4
 # jail_has_v6
@@ -117,6 +119,7 @@ postcreate_nextcloud()
 
 	set +o xtrace
 	set +o errexit
+	# deprecated for CBSD 13.0.21+
 	get_jail_ips
 
 	# turn off unnecessary services, enable nginx/php-fpm/postgresql/redis
@@ -202,25 +205,6 @@ service php-fpm start
 EOF
 
 	# Configure Nginx
-	# disable v6, todo: gets IP
-	if [ ${jail_has_v4} -eq 1 -a ${jail_has_v6} -eq 1 ]; then
-		# do nothing
-	elif [ ${jail_has_v4} -eq 1 -a ${jail_has_v6} -eq 0 ]; then
-		# v4-only
-		# todo: to poststart hook
-		jexec <<EOF
-echo "listen *:80;" > /usr/local/etc/nginx/listen80.conf
-echo "listen *:443 ssl http2;" > /usr/local/etc/nginx/listen443.conf
-EOF
-	elif [ ${jail_has_v4} -eq 0 -a ${jail_has_v6} -eq 1 ]; then
-		# v6-only
-		# todo: to poststart hook
-		jexec <<EOF
-echo "listen [::]:80;" > /usr/local/etc/nginx/listen80.conf
-echo "listen [::]:443 ssl http2;" > /usr/local/etc/nginx/listen443.conf
-EOF
-	fi
-
 	jexec <<EOF
 chown -R www:www /var/log/nginx
 
