@@ -37,7 +37,7 @@ jail_nextcloud()
 	# use 'cbsd up ver=12.2' for overwrite via args
 	ver="native"
 
-	pkglist=$( ${SED_CMD} -e "s:%%PG_VER%%:${PG_VER}:g" -e "s:%%PHP_VER%%:${PHP_VER}:g" | ${TR_CMD} '\n' ' ' < nextcloud_pkg_list )
+	pkglist=$( ${SED_CMD} -e "s:%%PG_VER%%:${PG_VER}:g" -e "s:%%PHP_VER%%:${PHP_VER}:g" nextcloud_pkg_list | ${TR_CMD} '\n' ' ' )
 
 	# set interface=0 when IP not manage by CBSD
 	interface="auto"
