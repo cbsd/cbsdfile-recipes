@@ -16,7 +16,6 @@ php%%PHP_VER%%-fileinfo
 php%%PHP_VER%%-filter
 php%%PHP_VER%%-gd
 php%%PHP_VER%%-gmp
-php%%PHP_VER%%-hash
 php%%PHP_VER%%-iconv
 php%%PHP_VER%%-json
 php%%PHP_VER%%-mbstring
