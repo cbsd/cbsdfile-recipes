@@ -31,3 +31,15 @@ zfs set recordsize=8k zroot/nextcloud/database
 - Switch (or create alternative template) to Puppet module
 - Replica set ?
 
+
+# Certbot addon, WIP:
+
+    # add package:
+    pkg add py38-certbot
+
+    # nginx.conf ( symlink ? )
+    ssl_certificate /usr/local/etc/letsencrypt/live/$H_NEXTCLOUD_FQDN/fullchain.pem;
+    ssl_certificate_key /usr/local/etc/letsencrypt/live/$H_NEXTCLOUD_FQDN/privkey.pem;
+
+    # cmd:
+    certbot -n --agree-tos --email $H_SSLMAIL --webroot -w /usr/local/www/letsencrypt certonly -d $H_NEXTCLOUD_FQDN

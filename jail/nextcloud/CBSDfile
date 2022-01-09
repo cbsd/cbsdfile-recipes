@@ -10,6 +10,22 @@ PHP_VER="74"
 #  env H_NEXTCLOUD_FQDN=my.example.ru cbsd up
 [ -z "${H_NEXTCLOUD_FQDN}" ] && H_NEXTCLOUD_FQDN="nextcloud.mydomain.com"
 
+H_DBPASSWD=$( random_password_gen -l 30 )
+H_SSLPASSWD=$( random_password_gen -l 30 )
+H_NCADMIN="ncadmin"				# Nextcloud admin username
+H_NCPASSWD=$( random_password_gen -l 30 )
+
+#
+H_SSLCOUNTRY=""
+#
+H_SSLSTATE=""
+#
+H_SSLLOCATION=""
+# set your email here, used in SSL cert/certbot
+# to overwrite H_SSLMAIL from env/args:
+# env H_SSLMAIL="olevole@olevole.ru H_NEXTCLOUD_FQDN="nextcloud.mydomain.com" cbsd up
+[ -z "${H_SSLMAIL}" ] && H_SSLMAIL=""
+
 quiet=0
 
 # deprecated for CBSD 13.0.21+
@@ -26,14 +42,6 @@ jail_nextcloud()
 	# use 'cbsd up ip4_addr=XXXX' for overwrite via args
 	ip4_addr="DHCP"
 	host_hostname="${jname}.my.domain"
-#	H_SSLCOUNTRY=""
-#	H_SSLSTATE=""
-#	H_SSLLOCATION=""
-#	H_SSLMAIL=""
-	H_DBPASSWD=$( random_password_gen -l 30 )
-	H_SSLPASSWD=$( random_password_gen -l 30 )
-	H_NCADMIN=ncadmin
-	H_NCPASSWD=$( random_password_gen -l 30 )
 
 	# use 'cbsd up ver=12.2' for overwrite via args
 	ver="native"
@@ -242,8 +250,6 @@ su -m www -c 'php /usr/local/www/nextcloud/occ maintenance:install --database=pg
 su -m www -c 'php /usr/local/www/nextcloud/occ db:add-missing-indices'
 su -m www -c 'php /usr/local/www/nextcloud/occ db:convert-filecache-bigint'
 
-su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains 2 --value="${H_NEXTCLOUD_FQDN}"'
-
 su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set redis host --value="/var/run/redis/redis.sock"'
 su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set redis port --value=0 --type=integer'
 
@@ -255,9 +261,13 @@ echo ");" >> /usr/local/www/nextcloud/config/config.php
 #su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.local --value="\OC\Memcache\APCu"'
 EOF
 
-	for _ip in ${jail_ip}; do
-		echo "jexec jname=${jname} cmd=\"su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains 1 --value=${_ip}'\""
-		jexec jname=${jname} cmd="su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains 1 --value=${_ip}'"
+	trusted_num=1
+
+	# todo: switch to facts, CBSD 13.0.21+
+	for _ip in ${jail_ip} ${H_NEXTCLOUD_FQDN}; do
+		echo "jexec jname=${jname} cmd=\"su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains ${trusted_num} --value=${_ip}'\""
+		jexec jname=${jname} cmd="su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains ${trusted_num} --value=${_ip}'"
+		trusted_num=$(( trusted_num + 1 ))
 	done
 
 
