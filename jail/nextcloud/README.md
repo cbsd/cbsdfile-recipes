@@ -23,6 +23,7 @@ zfs set recordsize=8k zroot/nextcloud/database
 
 # Todo
 
+- Proper upgrade when external volume used: store password in volumes? skip db create, migration .., ... ?
 - Why baserw=1 ? change data mountpoint into /usr/local/ ?
 - External volumes optional
 - Currently ZFS-only? Optional for UFS or iSCSI/NFS/..

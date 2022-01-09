@@ -7,10 +7,19 @@ if [ -z "${NC_CMD}" ]; then
 	exit 1
 fi
 
-ip4_addr=$( cbsd jget jname=nextcloud mode=quiet ip4_addr )
-
-echo "Probing: ${ip4_addr}:5432" 2>&1
-${NC_CMD} -z ${ip4_addr} 5432 2>&1
-ret=$?
+if [ -n "${ipv4_first}" ]; then
+	# check via IPv4
+	echo "Probing: ${ipv4_first}:5432" 2>&1
+	${NC_CMD} -z ${ipv4_first} 5432 2>&1
+	ret=$?
+elif [ -n "${ipv6_first}" ]; then
+	# check via IPv6
+	echo "Probing: [${ipv6_first}]:5432" 2>&1
+	${NC_CMD} -6 -z [${ipv6_first}] 5432 2>&1
+	ret=$?
+else
+	echo "Unable to determine ipv4_first/ipv6_first facts"
+	ret=1
+fi
 
 exit ${ret}

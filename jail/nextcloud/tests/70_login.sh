@@ -8,20 +8,21 @@ if [ -z "${CURL_CMD}" ]; then
 	exit 1
 fi
 
-ip4_addr=$( cbsd jget jname=nextcloud mode=quiet ip4_addr 2>/dev/null )
 GREP_VAL="body-login"
 
-case "${ip4_addr}" in
-	*\.*\.*\.*)
-		printf "Check for login page https://${ip4_addr}/login ( filter cmd: ${GREP_VAL} )..." 2>&1
-		${CURL_CMD} -k --no-progress-meter -L https://${ip4_addr}/login | grep "${GREP_VAL}"
-		ret=$?
-		;;
-	*:*)
-		printf "Check for login page https://[${ip4_addr}]/login ( filter cmd: ${GREP_VAL} )..." 2>&1
-		${CURL_CMD} -k -6 --no-progress-meter -L https://[${ip4_addr}]/login | grep "${GREP_VAL}"
-		ret=$?
-		;;
-esac
+if [ -n "${ipv4_first}" ]; then
+	# check via IPv4
+	printf "Check for login page https://${ipv4_first}/login ( filter cmd: ${GREP_VAL} )..." 2>&1
+	${CURL_CMD} -k --no-progress-meter -L https://${ipv4_first}/login | grep "${GREP_VAL}"
+	ret=$?
+elif [ -n "${ipv6_first}" ]; then
+	# check via IPv6
+	printf "Check for login page https://[${ipv6_first}]/login ( filter cmd: ${GREP_VAL} )..." 2>&1
+	${CURL_CMD} -k -6 --no-progress-meter -L https://[${ipv6_first}]/login | grep "${GREP_VAL}"
+	ret=$?
+else
+	echo "Unable to determine ipv4_first/ipv6_first facts"
+	ret=1
+fi
 
 exit ${ret}
