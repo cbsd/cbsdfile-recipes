@@ -23,7 +23,7 @@ H_SSLSTATE=""
 H_SSLLOCATION=""
 # set your email here, used in SSL cert/certbot
 # to overwrite H_SSLMAIL from env/args:
-# env H_SSLMAIL="olevole@olevole.ru H_NEXTCLOUD_FQDN="nextcloud.mydomain.com" cbsd up
+# env H_SSLMAIL="your_mail@mydomain.com H_NEXTCLOUD_FQDN="nextcloud.mydomain.com" cbsd up
 [ -z "${H_SSLMAIL}" ] && H_SSLMAIL=""
 
 quiet=0
