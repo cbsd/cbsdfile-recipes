@@ -10,18 +10,32 @@ fi
 
 GREP_VAL=""form.*action.*post""
 
-# SSL?
-exit 0
+data=$( cbsd jget mode=quiet jname=gitlab data 2>/dev/null )
+. ${data}/etc/rc.conf
+
+max_retry=5
+retry=0
 
 if [ -n "${ipv4_first}" ]; then
 	# check via IPv4
-	printf "Check for login page http://${ipv4_first}/users/sign_in ( filter cmd: ${GREP_VAL} )..." 2>&1
-	${CURL_CMD} --no-progress-meter -L http://${ipv4_first}/users/sign_in | grep "${GREP_VAL}"
-	ret=$?
+	for retry in $( jot ${max_retry} ); do
+		printf "Check for login page http://${ipv4_first}:${gitlab_http_port}/users/sign_in ( filter cmd: ${GREP_VAL} )...[${retry}/${max_retry}]" 2>&1
+		${CURL_CMD} --no-progress-meter -L http://${ipv4_first}:${gitlab_http_port}/users/sign_in | grep "${GREP_VAL}"
+		ret=$?
+		[ ${ret} -eq 0 ] && break
+		retry=$(( retry + 1 ))
+		sleep 1
+	done
 elif [ -n "${ipv6_first}" ]; then
 	# check via IPv6
-	printf "Check for login page http://[${ipv6_first}]/users/sign_in ( filter cmd: ${GREP_VAL} )..." 2>&1
-	${CURL_CMD} -6 --no-progress-meter -L http://[${ipv6_first}]/users/sign_in | grep "${GREP_VAL}"
+	for retry in $( jot ${max_retry} ); do
+		printf "Check for login page http://[${ipv6_first}]:${gitlab_http_port}/users/sign_in ( filter cmd: ${GREP_VAL} )...[${retry}/${max_retry}]" 2>&1
+		${CURL_CMD} -6 --no-progress-meter -L http://[${ipv6_first}]:${gitlab_http_port}/users/sign_in | grep "${GREP_VAL}"
+		ret=$?
+		[ ${ret} -eq 0 ] && break
+		retry=$(( retry + 1 ))
+		sleep 1
+	done
 else
 	echo "Unable to determine ipv4_first/ipv6_first facts"
 	ret=1

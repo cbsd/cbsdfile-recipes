@@ -1,5 +1,8 @@
 # Based on: https://gitlab.fechner.net/mfechner/Gitlab-docu/-/blob/master/install/14.5-freebsd.md
+# use 'cbsd up <param>=<val>' to overwrite default jail settings, e.g:
+# env GITLAB_HTTP_PORT=8080 cbsd up ip4_addr=46.4.100.29,2a01:4f8:140:918b::1 interface=0 ver=13.0 astart=0
 
+# Cloud API ?
 # Uncommend CLOUD_\* vars ro work remote API provider
 # See https://www.bsdstore.ru/en/cbsdfile.html for details
 #CLOUD_URL="https://us-sw.api.my.domain"
@@ -11,19 +14,23 @@
 # GITLAB_SSH_PORT=2233
 # or specify via env:
 # env GITLAB_SSH_PORT=1234 cbsd up
-GITLAB_SSH_PORT=22
+[ -z "${GITLAB_SSH_PORT}" ] && GITLAB_SSH_PORT=22
 
 # Use CBSD expose to forward SSH traffic? Useful when GITLAB_SSH_PORT != 22
 # By default: disabled ( GITLAB_SSH_EXPOSE=0 )
 # default:
 # GITLAB_SSH_EXPOSE=0
-GITLAB_SSH_EXPOSE=0
+[ -z "${GITLAB_SSH_EXPOSE}" ] && GITLAB_SSH_EXPOSE=0
 
 # GitLab root password:
 GITLAB_ROOT_PASSWORD="yourpassword"
 
 # Default Postgresql version
 PG_VER="13"
+
+# Default Nginx listen/bind port:
+[ -z "${GITLAB_HTTP_PORT}" ] && GITLAB_HTTP_PORT=80
+[ -z "${GITLAB_HTTPS_PORT}" ] && GITLAB_HTTPS_PORT=0		# 0 - disabled
 
 quiet=0
 
@@ -126,7 +133,9 @@ postcreate_gitlab()
 		gitlab_enable="YES" \
 		postgresql_enable="YES" \
 		nginx_enable="YES" \
-		redis_enable="YES"
+		redis_enable="YES" \
+		gitlab_http_port="${GITLAB_HTTP_PORT}" \
+		gitlab_https_port="${GITLAB_HTTPS_PORT}"
 
 	# 2. Database
 	# some secrets
@@ -343,25 +352,17 @@ EOF
 	# 7. Nginx
 	jail_v6_active=0
 
-	# disable v6, todo: gets IP
-	if [ ${jail_has_v4} -eq 1 -a ${jail_has_v6} -eq 1 ]; then
-		# do nothing
-	elif [ ${jail_has_v4} -eq 1 -a ${jail_has_v6} -eq 0 ]; then
-		# v4 only
-		jexec <<EOF
-cp -a /usr/local/www/gitlab-ce/lib/support/nginx/gitlab /usr/local/www/gitlab-ce/lib/support/nginx/gitlab.bak
-sed -i '' -e "s/^.*listen \\\[::\\\]/  # listen [::]:80 default_server;;/g" /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
-#sed -i '' -e 's/^.*listen \[::\]:80 default_server;$//g' /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
-EOF
-	elif [ ${jail_has_v4} -eq 0 -a ${jail_has_v6} -eq 1 ]; then
-		# v6 only
-		jexec <<EOF
-cp -a /usr/local/www/gitlab-ce/lib/support/nginx/gitlab /usr/local/www/gitlab-ce/lib/support/nginx/gitlab.bak
-sed -i '' -e "s/^.*listen 0.0.0.0:80 / # listen 0.0.0.0:80;/g" /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
-EOF
-	fi
+	# re-init listen-http/listen-https config from hooks
+	${workdir}/jails-system/${jname}/master_poststart.d/set_nginx_listen.sh
 
+	# rewrite listen to managed by CBSD hooks include files;
 	jexec <<EOF
+cp -a /usr/local/www/gitlab-ce/lib/support/nginx/gitlab /usr/local/www/gitlab-ce/lib/support/nginx/gitlab.bak
+# We can concat in one sed but then it is more difficult to understand which replacement is the error
+sed -i '' -e "s#^.*listen \\\[::\\\].*#  include /usr/local/etc/nginx/listen-http.conf;#g" /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
+sed -i '' -e "s#^.*listen 0.0.0.0:80.*#  include /usr/local/etc/nginx/listen-https.conf;#g" /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
+sed -i '' -e "s#YOUR_SERVER_FQDN#_#g" /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
+
 mkdir /var/log/nginx
 nginx -t
 service nginx restart
@@ -406,9 +407,14 @@ fi
 
 	set +o xtrace
 	# postmessage
-	for i in ${jail_ip}; do
-		${ECHO} "	GitLab URL	: http://${i}"
-	done
+	if [ -n "${ipv4_first}" ]; then
+		${ECHO} "	GitLab URL	: http://${ipv4_first}:${GITLAB_HTTP_PORT}"
+		[ "${GITLAB_HTTPS_PORT}" != "0" ] && ${ECHO} "	GitLab URL	: https://${ipv4_first}:${GITLAB_HTTPS_PORT}"
+	fi
+	if [ -n "${ipv6_first}" ]; then
+		${ECHO} "	GitLab URL	: http://[${ipv6_first}]:${GITLAB_HTTP_PORT}"
+		[ "${GITLAB_HTTPS_PORT}" != "0" ] && ${ECHO} "	GitLab URL	: https://[${ipv6_first}]:${GITLAB_HTTPS_PORT}"
+	fi
 
 	${CAT_CMD} <<EOF
 	GitLab root login   : root
