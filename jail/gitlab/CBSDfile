@@ -1,12 +1,5 @@
-# Based on: https://gitlab.fechner.net/mfechner/Gitlab-docu/-/blob/master/install/14.5-freebsd.md
 # use 'cbsd up <param>=<val>' to overwrite default jail settings, e.g:
-# env GITLAB_HTTP_PORT=8080 cbsd up ip4_addr=46.4.100.29,2a01:4f8:140:918b::1 interface=0 ver=13.0 astart=0
-
-# Cloud API ?
-# Uncommend CLOUD_\* vars ro work remote API provider
-# See https://www.bsdstore.ru/en/cbsdfile.html for details
-#CLOUD_URL="https://us-sw.api.my.domain"
-#CLOUD_KEY="ssh-ed25519 XXX your@comment"
+# env GITLAB_HTTP_PORT=8080 cbsd up ip4_addr=46.4.100.29,2a01:4f8:140:918b::1 ver=13.0 astart=0
 
 # Customize gitlab options
 # use alternative ssh port, e.g: 2233
@@ -160,8 +153,8 @@ EOF
 	# Allow full access to DB
 	# TODO this needs to be fixed to be more secure
 	jexec <<EOF
-echo "host    all             all             0.0.0.0/0               trust" >> /var/db/postgres/data${PG_VER}/pg_hba.conf
-echo "host    all             all             ::/0                    trust" >> /var/db/postgres/data${PG_VER}/pg_hba.conf
+echo "host    all             all             0.0.0.0/0               md5" >> /var/db/postgres/data${PG_VER}/pg_hba.conf
+echo "host    all             all             ::/0                    md5" >> /var/db/postgres/data${PG_VER}/pg_hba.conf
 EOF
 
 	# Start postgres
@@ -177,7 +170,9 @@ EOF
 
 	jexec <<EOF
 # create user git
-psql -d template1 -U postgres -c "CREATE USER git CREATEDB SUPERUSER;"
+psql -d template1 -U postgres -c "CREATE USER git WITH PASSWORD '${DB_PASSWORD}'"
+psql -d template1 -U postgres -c "ALTER USER git WITH SUPERUSER;"
+psql -d template1 -U postgres -c "ALTER USER git WITH CREATEDB;"
 
 # Create the GitLab production database & grant all privileges on database
 psql -d template1 -U postgres -c "CREATE DATABASE gitlabhq_production OWNER git;"
@@ -206,9 +201,6 @@ echo 'unixsocket /var/run/redis/redis.sock' >> /usr/local/etc/redis.conf
 # Grant permission to the socket to all members of the redis group
 echo 'unixsocketperm 770' >> /usr/local/etc/redis.conf
 
-# Allow Redis to be started
-sysrc redis_enable=YES
-
 # Activate the changes to redis.conf
 service redis restart
 
@@ -226,7 +218,7 @@ EOF
 
 	# Set db password
 	jexec <<EOF
-sed -i '' -e 's/\s\spassword: "secure password"/  password: "${DB_PASSWORD}"/g' /usr/local/www/gitlab-ce/config/database.yml
+sed -i '' -e 's#"secure password"#"${DB_PASSWORD}"#g' /usr/local/www/gitlab-ce/config/database.yml
 EOF
 
 #	# 4. GitLab
