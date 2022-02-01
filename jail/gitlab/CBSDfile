@@ -141,6 +141,10 @@ postcreate_gitlab()
 echo "127.0.0.1:5432:gitlabhq_production:git:${DB_PASSWORD}" > /root/.pgpass
 echo "::1:5432:gitlabhq_production:git:${DB_PASSWORD}" >> /root/.pgpass
 chmod 0600 /root/.pgpass
+
+	# fix perms for skel files
+	chown root:wheel /etc/login.conf /etc/login.conf.db /etc/mail/aliases /etc/mail/aliases.db
+	service sshd restart
 EOF
 	echo
 	${ECHO} "${H3_COLOR}Postgres git user password saved in: ${N2_COLOR}${data}/root/.pgpass${N0_COLOR}"
