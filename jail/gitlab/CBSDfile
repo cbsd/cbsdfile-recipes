@@ -264,7 +264,7 @@ su -l git -c "git config --global receive.advertisePushOptions true"
 su -l git -c "git config --global core.fsyncObjectFiles true"
 
 # Make sure .ssh directory exists
-su -l git -c "mkdir -p /usr/local/git/.ssh"
+su -l git -c "mkdir -m 0700 -p /usr/local/git/.ssh"
 
 # Make sure repositories directory exists with correct permissions
 su -l git -c "mkdir -p /usr/local/git/repositories"
@@ -375,7 +375,7 @@ EOF
 
 	if [ "${GITLAB_SSH_PORT}" != "22" ]; then
 		jexec <<EOF
-su -l git -c "mkdir -p /usr/local/git/.ssh"
+su -l git -c "mkdir -m 0775 -p /usr/local/git/.ssh"
 cat > /usr/local/git/.ssh/config <<JEOF
 host ${host_hostname}
 	user git
