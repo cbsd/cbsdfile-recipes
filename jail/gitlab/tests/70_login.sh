@@ -8,20 +8,23 @@ if [ -z "${CURL_CMD}" ]; then
 	exit 1
 fi
 
-ip4_addr=$( cbsd jget jname=gitlab mode=quiet ip4_addr 2>/dev/null )
 GREP_VAL=""form.*action.*post""
 
-case "${ip4_addr}" in
-	*\.*\.*\.*)
-		printf "Check for login page http://${ip4_addr}/users/sign_in ( filter cmd: ${GREP_VAL} )..." 2>&1
-		${CURL_CMD} --no-progress-meter -L http://${ip4_addr}/users/sign_in | grep "${GREP_VAL}"
-		ret=$?
-		;;
-	*:*)
-		printf "Check for login page http://[${ip4_addr}]/users/sign_in ( filter cmd: ${GREP_VAL} )..." 2>&1
-		${CURL_CMD} -6 --no-progress-meter -L http://[${ip4_addr}]/users/sign_in | grep "${GREP_VAL}"
-		ret=$?
-		;;
-esac
+# SSL?
+exit 0
+
+if [ -n "${ipv4_first}" ]; then
+	# check via IPv4
+	printf "Check for login page http://${ipv4_first}/users/sign_in ( filter cmd: ${GREP_VAL} )..." 2>&1
+	${CURL_CMD} --no-progress-meter -L http://${ipv4_first}/users/sign_in | grep "${GREP_VAL}"
+	ret=$?
+elif [ -n "${ipv6_first}" ]; then
+	# check via IPv6
+	printf "Check for login page http://[${ipv6_first}]/users/sign_in ( filter cmd: ${GREP_VAL} )..." 2>&1
+	${CURL_CMD} -6 --no-progress-meter -L http://[${ipv6_first}]/users/sign_in | grep "${GREP_VAL}"
+else
+	echo "Unable to determine ipv4_first/ipv6_first facts"
+	ret=1
+fi
 
 exit ${ret}
