@@ -1,36 +1,48 @@
 # use 'cbsd up <param>=<val>' to overwrite default jail settings, e.g:
-# env GITLAB_HTTP_PORT=8080 cbsd up ip4_addr=46.4.100.29,2a01:4f8:140:918b::1 ver=13.0 astart=0
+# env GITLAB_HTTP_PORT=8080 cbsd up ip4_addr=46.4.100.29,2a01:4f8:140:918b::1 ver=13.0 astart=1
 
-# Customize gitlab options
-# use alternative ssh port, e.g: 2233
-# default:
-# GITLAB_SSH_PORT=2233
-# or specify via env:
-# env GITLAB_SSH_PORT=1234 cbsd up
-[ -z "${GITLAB_SSH_PORT}" ] && GITLAB_SSH_PORT=22
+### Global settings
+# Initial root password for UI
+[ -z "${GITLAB_ROOT_PASSWORD}" ] && GITLAB_ROOT_PASSWORD="yourpassword"
+# GitLab external FQDN. Leave '0' for disable ( http://IP access )
+[ -z "${GITLAB_FQDN}" ] && GITLAB_FQDN=0
 
-# Use CBSD expose to forward SSH traffic? Useful when GITLAB_SSH_PORT != 22
-# By default: disabled ( GITLAB_SSH_EXPOSE=0 )
-# default:
-# GITLAB_SSH_EXPOSE=0
-[ -z "${GITLAB_SSH_EXPOSE}" ] && GITLAB_SSH_EXPOSE=0
-
+### Postgresql settings
 # GitLab root password:
-GITLAB_ROOT_PASSWORD="yourpassword"
-
 # Default Postgresql version
-PG_VER="13"
+[ -z "${GITLAB_PG_VER}" ] && GITLAB_PG_VER="13"
 
-# Default Nginx listen/bind port:
+
+### Nginx settings
+# Default nginx port for http:// in jail:
 [ -z "${GITLAB_HTTP_PORT}" ] && GITLAB_HTTP_PORT=80
+
+# Default nginx port for https:// in jail:
 [ -z "${GITLAB_HTTPS_PORT}" ] && GITLAB_HTTPS_PORT=0		# 0 - disabled
 
-quiet=0
+# Use 'cbsd expose' to forward HTTP traffic from CBSD $nodeip ?
+# By default: '0' - disabled
+# Use any positive values 1-65534 as 'in=' port for 'cbsd expose':
+# 'cbsd expose in=GITLAB_HTTP_EXPOSE out=GITLAB_HTTP_PORT'
+[ -z "${GITLAB_HTTP_EXPOSE}" ] && GITLAB_HTTP_EXPOSE=0
 
-# used to configure nginx
-jail_has_v4=0
-jail_has_v6=0
-jail_ips=
+# Use 'cbsd expose' to forward HTTPS traffic from CBSD $nodeip ?
+# By default: '0' - disabled
+# Use any positive values 1-65534 as 'in=' port for 'cbsd expose':
+# 'cbsd expose in=GITLAB_HTTPS_EXPOSE out=GITLAB_HTTPS_PORT'
+[ -z "${GITLAB_HTTPS_EXPOSE}" ] && GITLAB_HTTPS_EXPOSE=0
+
+
+### SSH settings
+# Default SSHD port in jail:
+[ -z "${GITLAB_SSH_PORT}" ] && GITLAB_SSH_PORT="22"
+
+# Use 'cbsd expose' to forward SSH traffic from CBSD $nodeip ?
+# By default: '0' - disabled
+# Use any positive values 1-65534 as 'in=' port for 'cbsd expose':
+# 'cbsd expose in=GITLAB_SSH_EXPOSE out=GITLAB_SSH_PORT'
+[ -z "${GITLAB_SSH_EXPOSE}" ] && GITLAB_SSH_EXPOSE=0
+
 
 jail_gitlab()
 {
@@ -47,56 +59,9 @@ jail_gitlab()
 	# PgSQL req:
 	allow_sysvipc=1
 	allow_raw_sockets=1
-	host_hostname="${jname}.convectix.com"
+	host_hostname="${jname}.idefix.lan"
 	pkg_bootstrap="1"
-	pkglist="security/ca_root_nss devel/git databases/postgresql${PG_VER}-contrib databases/postgresql${PG_VER}-server www/nginx www/gitlab-ce"
-}
-
-# export:
-# jail_has_v4
-# jail_has_v6
-# jail_ip
-get_jail_ips()
-{
-	local _ip
-	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
-
-	[ -z "${_ip}" ] && err 1 "${N1_COLOR}${CBSD_APP}: unable to determine jail IPs: ${N2_COLOR}${jname}${N0_COLOR}"
-
-	OIFS="${IFS}"
-	IFS=","
-	for i in ${_ip}; do
-		IFS="${OIFS}"
-		myip=
-		iptype ${i}
-		case $? in
-			1)
-				jail_has_v4=1
-				# ipv4, no cast
-				if [ -z "${jail_ip}" ]; then
-					jail_ip="${i}"
-				else
-					jail_ip="${jail_ip} ${i}"
-				fi
-				;;
-			2)
-				# ipv6, add brackets
-				jail_has_v6=1
-				if [ -z "${jail_ip}" ]; then
-					jail_ip="[${i}]"
-				else
-					jail_ip="${jail_ip} [${i}]"
-				fi
-				;;
-			*)
-				[ -z "${_ip}" ] && err 1 "${N1_COLOR}${CBSD_APP}: unknown jail IP type: ${N2_COLOR}${i}${N0_COLOR}"
-				;;
-		esac
-		IFS=","
-	done
-
-	IFS="${OIFS}"
-	return 0
+	pkglist="security/ca_root_nss devel/git databases/postgresql${GITLAB_PG_VER}-contrib databases/postgresql${GITLAB_PG_VER}-server www/nginx www/gitlab-ce"
 }
 
 
@@ -106,11 +71,16 @@ postcreate_gitlab()
 
 	set +o xtrace
 	set +o errexit
-	get_jail_ips
 
-	# for expose
-	if [ ${GITLAB_SSH_EXPOSE} -eq 1 ]; then
-		expose mode=add in=${GITLAB_SSH_PORT} out=22
+	# ssh expose ?
+	if [ ${GITLAB_SSH_EXPOSE} -ne 0 ]; then
+		expose mode=add in=${GITLAB_SSH_EXPOSE} out=${GITLAB_SSH_PORT}
+	fi
+	if [ ${GITLAB_HTTP_EXPOSE} -ne 0 ]; then
+		expose mode=add in=${GITLAB_HTTP_EXPOSE} out=${GITLAB_HTTP_PORT}
+	fi
+	if [ ${GITLAB_HTTPS_EXPOSE} -ne 0 ]; then
+		expose mode=add in=${GITLAB_HTTPS_EXPOSE} out=${GITLAB_HTTPS_PORT}
 	fi
 
 	# cbsd sysrc
@@ -122,11 +92,12 @@ postcreate_gitlab()
 		sendmail_msp_queue_enable="NO" \
 		cron_enable="NO" \
 		sshd_enable="YES" \
-		sshd_flags="-oUseDNS=no" \
+		sshd_flags="-oUseDNS=no -oPort=${GITLAB_SSH_PORT}" \
 		gitlab_enable="YES" \
 		postgresql_enable="YES" \
 		nginx_enable="YES" \
 		redis_enable="YES" \
+		gitlab_ssh_port="${GITLAB_SSH_PORT}" \
 		gitlab_http_port="${GITLAB_HTTP_PORT}" \
 		gitlab_https_port="${GITLAB_HTTPS_PORT}"
 
@@ -142,9 +113,9 @@ echo "127.0.0.1:5432:gitlabhq_production:git:${DB_PASSWORD}" > /root/.pgpass
 echo "::1:5432:gitlabhq_production:git:${DB_PASSWORD}" >> /root/.pgpass
 chmod 0600 /root/.pgpass
 
-	# fix perms for skel files
-	chown root:wheel /etc/login.conf /etc/login.conf.db /etc/mail/aliases /etc/mail/aliases.db
-	service sshd restart
+# fix perms for skel files
+chown root:wheel /etc/login.conf /etc/login.conf.db /etc/mail/aliases /etc/mail/aliases.db
+service sshd restart
 EOF
 	echo
 	${ECHO} "${H3_COLOR}Postgres git user password saved in: ${N2_COLOR}${data}/root/.pgpass${N0_COLOR}"
@@ -154,11 +125,11 @@ EOF
 	# Postgresql setup
 	service mode=action postgresql initdb
 
-	# Allow full access to DB
+	# Password auth for DB
 	# TODO this needs to be fixed to be more secure
 	jexec <<EOF
-echo "host    all             all             0.0.0.0/0               md5" >> /var/db/postgres/data${PG_VER}/pg_hba.conf
-echo "host    all             all             ::/0                    md5" >> /var/db/postgres/data${PG_VER}/pg_hba.conf
+echo "host    all             all             0.0.0.0/0               md5" >> /var/db/postgres/data${GITLAB_PG_VER}/pg_hba.conf
+echo "host    all             all             ::/0                    md5" >> /var/db/postgres/data${GITLAB_PG_VER}/pg_hba.conf
 EOF
 
 	# Start postgres
@@ -346,12 +317,9 @@ EOF
 
 	set +o xtrace
 	# 7. Nginx
-	jail_v6_active=0
-
-	# re-init listen-http/listen-https config from hooks
+	# re-init listen-http/listen-https include config files by set_nginx_listen.sh hooks
 	${workdir}/jails-system/${jname}/master_poststart.d/set_nginx_listen.sh
 
-	# rewrite listen to managed by CBSD hooks include files;
 	jexec <<EOF
 cp -a /usr/local/www/gitlab-ce/lib/support/nginx/gitlab /usr/local/www/gitlab-ce/lib/support/nginx/gitlab.bak
 # We can concat in one sed but then it is more difficult to understand which replacement is the error
