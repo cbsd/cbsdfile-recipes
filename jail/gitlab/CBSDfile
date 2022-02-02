@@ -48,6 +48,16 @@
 # UPFILE_DESTROY_FAILED - set to "0" to prevent the jail from being destroyed even if the test fails.
 [ -z "${UPFILE_DESTROY_FAILED}" ] && UPFILE_DESTROY_FAILED=1
 
+# global preup function
+preup()
+{
+	local _pwlen=0
+
+	_pwlen=$( strlen "${GITLAB_ROOT_PASSWORD}" )
+	[ ${_pwlen} -lt 8 ] && err 1 "${N1_COLOR}Password too small, ${W1_COLOR}8${N1_COLOR} characters minimum: ${N2_COLOR}${GITLAB_ROOT_PASSWORD}${N0_COLOR}"
+}
+
+
 jail_gitlab()
 {
 	# auto IPv4 by default
@@ -272,7 +282,7 @@ EOF
 	## Note: You can set the Administrator/root password by supplying it in environmental variable GITLAB_ROOT_PASSWORD as seen below. If you don't set the password (and it is set to the default one) please wait with exposing GitLab to the public internet until the installation is done and you've logged into the server the first time. During the first login you'll be forced to change the default password.
 
 	jexec <<EOF
-yes yes | su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:setup DISABLE_DATABASE_ENVIRONMENT_CHECK=1 RAILS_ENV=production GITLAB_ROOT_PASSWORD=${GITLAB_ROOT_PASSWORD}"
+yes yes | su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:setup DISABLE_DATABASE_ENVIRONMENT_CHECK=1 RAILS_ENV=production GITLAB_ROOT_PASSWORD=\"${GITLAB_ROOT_PASSWORD}\""
 EOF
 
 	#Secure secrets.yml
@@ -378,7 +388,7 @@ fi
 
 	${CAT_CMD} <<EOF
 	GitLab root login   : root
-	GitLab root passowrd: ${GITLAB_ROOT_PASSWORD}
+	GitLab root passowrd: "${GITLAB_ROOT_PASSWORD}"
 
 	Hint:
 	Enable cluster mode if you expect to have a high load instance

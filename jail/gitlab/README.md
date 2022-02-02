@@ -1,3 +1,5 @@
+[[_TOC_]]
+
 ## Gitlab CBSD template (static)
 
 Generate a GitLab jail container for CBSD.
@@ -34,18 +36,17 @@ or register as gold image ( e.g.: ZFS COW )
 
  Config Variables:
 
-GITLAB_ROOT_PASSWORD "yourpassword"
-GITLAB_FQDN 0
-GITLAB_PG_VER 13
-
-GITLAB_HTTP_PORT 80
-GITLAB_HTTPS_PORT 0
-
-GITLAB_HTTP_EXPOSE 0
-GITLAB_HTTPS_EXPOSE 0
-GITLAB_SSH_PORT 22
-
-GITLAB_SSH_EXPOSE 0
+|   variable name    | default values |                            description                             |
+|--------------------|----------------|--------------------------------------------------------------------|
+|GITLAB_ROOT_PASSWORD| "yourpassword" | Initial UI password for root user (8 characters minimum)           |
+|GITLAB_FQDN         |       0        | GitLab external FQDN                                               |
+|GITLAB_PG_VER       |       13       | Default Postgresql version ( /usr/ports/postgresqlXX-server port ) |
+|GITLAB_HTTP_PORT    |       80       | Default nginx port for http:// in jail                             |
+|GITLAB_HTTPS_PORT   |       0        | Default nginx port for https:// in jail                            |
+|GITLAB_HTTP_EXPOSE  |       0        | Use 'cbsd expose' to forward HTTP traffic from CBSD $nodeip?       |
+|GITLAB_HTTPS_EXPOSE |       0        | Use 'cbsd expose' to forward HTTPS traffic from CBSD $nodeip?      |
+|GITLAB_SSH_PORT     |       22       | Default sshd port in jail                                          |
+|GITLAB_SSH_EXPOSE   |       0        | Use 'cbsd expose' to forward SSH traffic from CBSD $nodeip         |
 
 ### Example Case 1:
 
@@ -56,10 +57,10 @@ GITLAB_SSH_EXPOSE 0
 
 ### Example Case 2
 
-  Set custom FQDN (gitlab.example.com) and 'root' user password (toor), get auto-IP for IPv4 and IPv6 (see `nodeippool` and `nodeip6pool` in `cbsd-initenv-tui` ),
+  Set custom FQDN (gitlab.example.com) and 'root' user password (toortoor), get auto-IP for IPv4 and IPv6 (see `nodeippool` and `nodeip6pool` in `cbsd-initenv-tui` ),
   also expose GitLab HTTP port to $nodeip:9000.
 
-  # env GITLAB_HTTP_EXPOSE=9000 GITLAB_ROOT_PASSWORD="toor" GITLAB_FQDN="gitlab.example.com"
+  # env GITLAB_HTTP_EXPOSE=9000 GITLAB_ROOT_PASSWORD="toortoor" GITLAB_FQDN="gitlab.example.com"
 
 ## SSL/HTTPS endpoints and certificate
 
