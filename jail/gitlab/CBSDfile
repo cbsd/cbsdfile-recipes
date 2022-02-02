@@ -44,6 +44,10 @@
 [ -z "${GITLAB_SSH_EXPOSE}" ] && GITLAB_SSH_EXPOSE=0
 
 
+### MISC settings
+# UPFILE_DESTROY_FAILED - set to "0" to prevent the jail from being destroyed even if the test fails.
+[ -z "${UPFILE_DESTROY_FAILED}" ] && UPFILE_DESTROY_FAILED=1
+
 jail_gitlab()
 {
 	# auto IPv4 by default
