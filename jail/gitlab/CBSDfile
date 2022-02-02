@@ -386,7 +386,7 @@ fi
 
 	${CAT_CMD} <<EOF
 	GitLab root login   : root
-	GitLab root passowrd: "${GITLAB_ROOT_PASSWORD}"
+	GitLab root passowrd: ${GITLAB_ROOT_PASSWORD}
 
 	Hint:
 	Enable cluster mode if you expect to have a high load instance
