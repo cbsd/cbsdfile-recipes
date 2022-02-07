@@ -260,21 +260,13 @@ EOF
 	#vi config/database.yml
 
 	# Initialize Database and Activate Advanced Features
+	# Note: You can set the Administrator/root password by supplying it in environmental variable GITLAB_ROOT_PASSWORD as seen below. If you don't set the password (and it is set to the default one) please wait with exposing GitLab to the public internet until the installation is done and you've logged into the server the first time. During the first login you'll be forced to change the default password.
 	jexec <<EOF
 # gitlab need write access to create a symlink
 chown git /usr/local/share/gitlab-shell
-
+yes yes | su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:setup DISABLE_DATABASE_ENVIRONMENT_CHECK=1 RAILS_ENV=production GITLAB_ROOT_PASSWORD=\"${GITLAB_ROOT_PASSWORD}\""
 # Make sure we undo the temporary permission fix again
 chown root /usr/local/share/gitlab-shell
-
-# When done you see 'Administrator account created:'
-EOF
-
-	#
-	## Note: You can set the Administrator/root password by supplying it in environmental variable GITLAB_ROOT_PASSWORD as seen below. If you don't set the password (and it is set to the default one) please wait with exposing GitLab to the public internet until the installation is done and you've logged into the server the first time. During the first login you'll be forced to change the default password.
-
-	jexec <<EOF
-yes yes | su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:setup DISABLE_DATABASE_ENVIRONMENT_CHECK=1 RAILS_ENV=production GITLAB_ROOT_PASSWORD=\"${GITLAB_ROOT_PASSWORD}\""
 EOF
 
 	#Secure secrets.yml
