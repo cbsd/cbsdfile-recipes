@@ -166,9 +166,6 @@ psql -d template1 -U postgres -c "ALTER USER git WITH CREATEDB;"
 # Create the GitLab production database & grant all privileges on database
 psql -d template1 -U postgres -c "CREATE DATABASE gitlabhq_production OWNER git;"
 
-## Try connecting to the new database with the new user
-psql -U git -d gitlabhq_production
-
 # Connect as superuser to gitlab db and enable pg_trgm extension if not installed
 psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
 psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS btree_gist;"
@@ -266,11 +263,6 @@ EOF
 	jexec <<EOF
 # gitlab need write access to create a symlink
 chown git /usr/local/share/gitlab-shell
-
-# make sure you are still using the root user and in /usr/local/www/gitlab-ce
-#su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:setup RAILS_ENV=production"
-yes yes | su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:setup RAILS_ENV=production"
-# Type 'yes' to create the database tables.
 
 # Make sure we undo the temporary permission fix again
 chown root /usr/local/share/gitlab-shell
