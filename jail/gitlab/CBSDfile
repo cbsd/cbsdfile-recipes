@@ -73,6 +73,10 @@ jail_gitlab()
 	# PgSQL req:
 	allow_sysvipc=1
 	allow_raw_sockets=1
+
+	# for external ZFS mount
+	allow_zfs=1
+
 	host_hostname="${jname}.idefix.lan"
 	pkg_bootstrap="1"
 	pkglist="security/ca_root_nss devel/git databases/postgresql${GITLAB_PG_VER}-contrib databases/postgresql${GITLAB_PG_VER}-server www/nginx www/gitlab-ce"
@@ -115,11 +119,35 @@ postcreate_gitlab()
 		gitlab_http_port="${GITLAB_HTTP_PORT}" \
 		gitlab_https_port="${GITLAB_HTTPS_PORT}"
 
-	# 2. Database
-	# some secrets
-	set +o xtrace
-	# use CBSD internal function to generate random password, length=30
+	IS_UPGRADE=0
+	DB_PASSWORD=
+	INIT_TIME=$( ${DATE_CMD} +%s )
+
 	DB_PASSWORD=$( random_password_gen -l 30 )
+	# create DB dir and set owner/perms (external volume always mount as root:wheel)
+	# store init time and password in cbsdfile signature
+	jexec <<EOF
+[ ! -d /var/db/postgres ] && mkdir /var/db/postgres
+chown postgres:postgres /var/db/postgres
+EOF
+
+	# check for previous installation signature
+	if [ -r ${path}/var/db/postgres/cbsdfile.conf ]; then
+		. ${path}/var/db/postgres/cbsdfile.conf
+	else
+		# first time setup
+		echo "DB_PASSWORD=\"${DB_PASSWORD}\"" > ${path}/var/db/postgres/cbsdfile.conf
+		echo "INIT_TIME=\"${INIT_TIME}\"" >> ${path}/var/db/postgres/cbsdfile.conf
+		echo "IS_UPGRADE=\"1\"" >> ${path}/var/db/postgres/cbsdfile.conf
+	fi
+
+	if [ ${IS_UPGRADE} -eq 1 ]; then
+		printf "${N1_COLOR}Postgresql DB already initialized on: ${N2_COLOR}"
+		${ECHO} "${INIT_TIME}"
+		${ECHO} "${N0_COLOR}"
+	else
+		${ECHO} "${N1_COLOR}First time setup${N2_COLOR}"
+	fi
 
 	# cbsd jexec
 	jexec <<EOF
@@ -131,20 +159,23 @@ chmod 0600 /root/.pgpass
 chown root:wheel /etc/login.conf /etc/login.conf.db /etc/mail/aliases /etc/mail/aliases.db /usr/local/etc/redis.conf
 service sshd restart
 EOF
+
 	echo
 	${ECHO} "${H3_COLOR}Postgres git user password saved in: ${N2_COLOR}${data}/root/.pgpass${N0_COLOR}"
 	echo
 	set -o xtrace
 
-	# Postgresql setup
-	service mode=action postgresql initdb
+	if [ ${IS_UPGRADE} -eq 1 ]; then
 
-	# Password auth for DB
-	# TODO this needs to be fixed to be more secure
-	jexec <<EOF
+		# Postgresql setup
+		service mode=action postgresql initdb
+
+		# Password auth for DB
+		jexec <<EOF
 echo "host    all             all             0.0.0.0/0               md5" >> /var/db/postgres/data${GITLAB_PG_VER}/pg_hba.conf
 echo "host    all             all             ::/0                    md5" >> /var/db/postgres/data${GITLAB_PG_VER}/pg_hba.conf
 EOF
+	fi
 
 	# Start postgres
 	service mode=action jname=${jname} postgresql start
@@ -157,7 +188,9 @@ EOF
 	set +o errexit
 	set -o xtrace
 
-	jexec <<EOF
+	if [ ${IS_UPGRADE} -eq 0 ]; then
+
+		jexec <<EOF
 # create user git
 psql -d template1 -U postgres -c "CREATE USER git WITH PASSWORD '${DB_PASSWORD}'"
 psql -d template1 -U postgres -c "ALTER USER git WITH SUPERUSER;"
@@ -165,7 +198,11 @@ psql -d template1 -U postgres -c "ALTER USER git WITH CREATEDB;"
 
 # Create the GitLab production database & grant all privileges on database
 psql -d template1 -U postgres -c "CREATE DATABASE gitlabhq_production OWNER git;"
+EOF
 
+	fi
+
+	jexec <<EOF
 # Connect as superuser to gitlab db and enable pg_trgm extension if not installed
 psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
 psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS btree_gist;"
@@ -241,9 +278,8 @@ su -l git -c "git config --global core.fsyncObjectFiles true"
 su -l git -c "mkdir -m 0700 -p /usr/local/git/.ssh"
 
 # Make sure repositories directory exists with correct permissions
-su -l git -c "mkdir -p /usr/local/git/repositories"
-chown git /usr/local/git/repositories
-chgrp git /usr/local/git/repositories
+[ ! -d /usr/local/git/repositories ] && mkdir /usr/local/git/repositories
+chown git:git /usr/local/git/repositories
 chmod 2770 /usr/local/git/repositories
 EOF
 
@@ -261,13 +297,28 @@ EOF
 
 	# Initialize Database and Activate Advanced Features
 	# Note: You can set the Administrator/root password by supplying it in environmental variable GITLAB_ROOT_PASSWORD as seen below. If you don't set the password (and it is set to the default one) please wait with exposing GitLab to the public internet until the installation is done and you've logged into the server the first time. During the first login you'll be forced to change the default password.
-	jexec <<EOF
+
+	if [ ${IS_UPGRADE} -eq 0 ]; then
+		jexec <<EOF
 # gitlab need write access to create a symlink
 chown git /usr/local/share/gitlab-shell
 yes yes | su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:setup DISABLE_DATABASE_ENVIRONMENT_CHECK=1 RAILS_ENV=production GITLAB_ROOT_PASSWORD=\"${GITLAB_ROOT_PASSWORD}\""
 # Make sure we undo the temporary permission fix again
 chown root /usr/local/share/gitlab-shell
 EOF
+	else
+		# upgrade/migration
+		${ECHO} "${N1_COLOR}Rake db:migrate...${N0_COLOR}"
+		jexec <<EOF
+# gitlab need write access to create a symlink
+chown git /usr/local/share/gitlab-shell
+su -l git -c "cd /usr/local/www/gitlab-ce && rake db:migrate RAILS_ENV=production"
+su -l git -c "cd /usr/local/www/gitlab-ce && rake cache:clear RAILS_ENV=production"
+# Make sure we undo the temporary permission fix again
+chown root /usr/local/share/gitlab-shell
+EOF
+	fi
+
 
 	#Secure secrets.yml
 	#The secrets.yml file stores encryption keys for sessions and secure variables.
@@ -287,10 +338,12 @@ su -l git -c "cd /usr/local/www/gitlab-ce && yarn install --production --pure-lo
 su -l git -c "cd /usr/local/www/gitlab-ce && RAILS_ENV=production NODE_ENV=production USE_DB=false SKIP_STORAGE_VALIDATION=true NODE_OPTIONS='--max_old_space_size=3584' bundle exec rake gitlab:assets:compile"
 EOF
 
-	#Remove Superuser rights from database user
-	jexec <<EOF
+	if [ ${IS_UPGRADE} -eq 0 ]; then
+		#Remove Superuser rights from database user
+		jexec <<EOF
 psql -d template1 -U postgres -c "ALTER USER git WITH NOSUPERUSER;"
 EOF
+	fi
 
 	#
 	#Start Your GitLab Instance

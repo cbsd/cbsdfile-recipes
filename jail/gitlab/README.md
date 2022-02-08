@@ -74,7 +74,22 @@ wip
 
 ## External volume
 
-wip
+### For ZFS host:
+
+1)  create ZFS dataset for jail
+```
+# (/var/db/postgres)
+zfs create -p -o compression=lz4 -o atime=off -o mountpoint=none zroot/gitlab/postgres
+zfs set primarycache=metadata zroot/gitlab/postgres
+zfs set recordsize=8k zroot/gitlab/postgres
+
+# (/usr/local/git/repositories)
+zfs create -p -o compression=lz4 -o atime=off -o mountpoint=none zroot/gitlab/repositories
+```
+
+2) Uncomment/edit mandatory line in: jails-system/fstab.local
+3) Uncomment/edit mandatory line in: jails-system/stop.d/zfs-unmount.sh
+
 
 ## Upgrading
 
