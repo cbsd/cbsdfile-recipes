@@ -23,7 +23,8 @@ if [ "${gitlab_https_port}" != "0" ]; then
 	echo "listen [::]:${gitlab_https_port} ssl http2;" >> /usr/local/etc/nginx/listen-https.conf
 fi
 
-service nginx restart
+# mute in first start: Cannot 'restart' nginx. Set nginx_enable to YES in /etc/rc.conf or use 'onerestart' instead of 'restart'.
+service nginx restart > /dev/null 2>&1
 EOF
 elif [ -n "${ipv6_first}" -a -z "${ipv4_first}" ]; then
 	# v6-only
@@ -48,7 +49,9 @@ echo "listen *:${gitlab_http_port};" >> /usr/local/etc/nginx/listen-http.conf
 if [ "${gitlab_https_port}" != "0" ]; then
 	echo "listen *:${gitlab_https_port} ssl http2;" >> /usr/local/etc/nginx/listen-https.conf
 fi
-service nginx restart
+
+# mute in first start: Cannot 'restart' nginx. Set nginx_enable to YES in /etc/rc.conf or use 'onerestart' instead of 'restart'.
+service nginx restart > /dev/null 2>&1
 EOF
 fi
 

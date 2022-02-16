@@ -5,7 +5,7 @@
 # Initial root password for UI
 [ -z "${GITLAB_ROOT_PASSWORD}" ] && GITLAB_ROOT_PASSWORD="yourpassword"
 # GitLab external FQDN. Leave '0' for disable ( http://IP access )
-[ -z "${GITLAB_FQDN}" ] && GITLAB_FQDN=0
+[ -z "${EXTERNAL_URL}" ] && EXTERNAL_URL=0
 
 ### Postgresql settings
 # GitLab root password:
@@ -48,6 +48,9 @@
 # UPFILE_DESTROY_FAILED - set to "0" to prevent the jail from being destroyed even if the test fails.
 [ -z "${UPFILE_DESTROY_FAILED}" ] && UPFILE_DESTROY_FAILED=1
 
+# global vars - installation or update? Don't touch.
+IS_UPGRADE=0
+
 # global preup function
 preup()
 {
@@ -82,46 +85,9 @@ jail_gitlab()
 	pkglist="security/ca_root_nss devel/git databases/postgresql${GITLAB_PG_VER}-contrib databases/postgresql${GITLAB_PG_VER}-server www/nginx www/gitlab-ce"
 }
 
-
-postcreate_gitlab()
+# PostgresQL init function
+configure_postgresql()
 {
-	local _ip
-
-	set +o xtrace
-	set +o errexit
-
-	# ssh expose ?
-	if [ ${GITLAB_SSH_EXPOSE} -ne 0 ]; then
-		expose mode=add in=${GITLAB_SSH_EXPOSE} out=${GITLAB_SSH_PORT}
-	fi
-	if [ ${GITLAB_HTTP_EXPOSE} -ne 0 ]; then
-		expose mode=add in=${GITLAB_HTTP_EXPOSE} out=${GITLAB_HTTP_PORT}
-	fi
-	if [ ${GITLAB_HTTPS_EXPOSE} -ne 0 ]; then
-		expose mode=add in=${GITLAB_HTTPS_EXPOSE} out=${GITLAB_HTTPS_PORT}
-	fi
-
-	# cbsd sysrc
-	sysrc \
-		syslogd_flags="-ss" \
-		sendmail_enable="NO" \
-		sendmail_submit_enable="NO" \
-		sendmail_outbound_enable="NO" \
-		sendmail_msp_queue_enable="NO" \
-		cron_enable="NO" \
-		sshd_enable="YES" \
-		sshd_flags="-oUseDNS=no -oPort=${GITLAB_SSH_PORT}" \
-		gitlab_enable="YES" \
-		postgresql_enable="YES" \
-		nginx_enable="YES" \
-		redis_enable="YES" \
-		gitlab_ssh_port="${GITLAB_SSH_PORT}" \
-		gitlab_http_port="${GITLAB_HTTP_PORT}" \
-		gitlab_https_port="${GITLAB_HTTPS_PORT}"
-
-	IS_UPGRADE=0
-	DB_PASSWORD=
-	INIT_TIME=$( ${DATE_CMD} +%s )
 
 	DB_PASSWORD=$( random_password_gen -l 30 )
 	# create DB dir and set owner/perms (external volume always mount as root:wheel)
@@ -154,10 +120,6 @@ EOF
 echo "127.0.0.1:5432:gitlabhq_production:git:${DB_PASSWORD}" > /root/.pgpass
 echo "::1:5432:gitlabhq_production:git:${DB_PASSWORD}" >> /root/.pgpass
 chmod 0600 /root/.pgpass
-
-# fix perms for skel files
-chown root:wheel /etc/login.conf /etc/login.conf.db /etc/mail/aliases /etc/mail/aliases.db /usr/local/etc/redis.conf
-service sshd restart
 EOF
 
 	echo
@@ -165,7 +127,7 @@ EOF
 	echo
 	set -o xtrace
 
-	if [ ${IS_UPGRADE} -eq 1 ]; then
+	if [ ${IS_UPGRADE} -eq 0 ]; then
 
 		# Postgresql setup
 		service mode=action postgresql initdb
@@ -180,17 +142,22 @@ EOF
 	# Start postgres
 	service mode=action jname=${jname} postgresql start
 	sleep 2
+}
 
-	# tests:
-	set +o xtrace
-	set -o errexit
-	tests/10_postgres_port.sh
-	set +o errexit
-	set -o xtrace
 
-	if [ ${IS_UPGRADE} -eq 0 ]; then
+configure_postgresql_cred()
+{
+	jexec <<EOF
+# Connect as superuser to gitlab db and enable pg_trgm extension if not installed
+psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS btree_gist;"
+EOF
 
-		jexec <<EOF
+
+	[ ${IS_UPGRADE} -eq 1 ] && return 0
+
+	# for new setup
+	jexec <<EOF
 # create user git
 psql -d template1 -U postgres -c "CREATE USER git WITH PASSWORD '${DB_PASSWORD}'"
 psql -d template1 -U postgres -c "ALTER USER git WITH SUPERUSER;"
@@ -199,38 +166,22 @@ psql -d template1 -U postgres -c "ALTER USER git WITH CREATEDB;"
 # Create the GitLab production database & grant all privileges on database
 psql -d template1 -U postgres -c "CREATE DATABASE gitlabhq_production OWNER git;"
 EOF
+}
 
-	fi
-
-	jexec <<EOF
-# Connect as superuser to gitlab db and enable pg_trgm extension if not installed
-psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
-psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS btree_gist;"
-EOF
-
-	# tests
-	set +o xtrace
-	set -o errexit
-	tests/20_postgres_cred.sh
-	set +o errexit
-	set -o xtrace
-
-	# 3. Redis
+configure_redis()
+{
 	jexec <<EOF
 # Add git user to redis group
 pw groupmod redis -m git
+chown root:wheel /usr/local/etc/redis.conf
 
 service redis restart
 EOF
+}
 
-	# tests
-	set +o xtrace
-	set -o errexit
-	tests/30_redis_process.sh
-	tests/40_redis_sock.sh
-	set +o errexit
-	set -o xtrace
 
+configure_gitlab()
+{
 	# Set db password
 	jexec <<EOF
 sed -i '' -e 's#"secure password"#"${DB_PASSWORD}"#g' /usr/local/www/gitlab-ce/config/database.yml
@@ -357,9 +308,11 @@ EOF
 	#service gitlab start
 	# or this:
 	#/usr/local/etc/rc.d/gitlab restart
-
 	set +o xtrace
-	# 7. Nginx
+}
+
+configure_nginx()
+{
 	# re-init listen-http/listen-https include config files by set_nginx_listen.sh hooks
 	${workdir}/jails-system/${jname}/master_poststart.d/set_nginx_listen.sh
 
@@ -374,18 +327,13 @@ mkdir /var/log/nginx
 nginx -t
 service nginx restart
 EOF
+}
 
-	# tests
-	set +o xtrace
-	set -o errexit
-	tests/50_nginx_process.sh
-	tests/60_gitlab_status.sh
-	tests/70_login.sh
-	set +o errexit
-	set -o xtrace
+configure_ssh()
+{
 
-	if [ "${GITLAB_SSH_PORT}" != "22" ]; then
-		jexec <<EOF
+	[ "${GITLAB_SSH_PORT}" = "22" ] && return 0
+	jexec <<EOF
 su -l git -c "mkdir -m 0700 -p /usr/local/git/.ssh"
 cat > /usr/local/git/.ssh/config <<JEOF
 host ${host_hostname}
@@ -396,6 +344,98 @@ JEOF
 chown git:git /usr/local/git/.ssh/config
 ${ECHO} "${N1_COLOR}non-standart ssh port saved in: ${N2_COLOR}/usr/local/git/.ssh/config${N0_COLOR}"
 EOF
+
+	##sed -i '' -e 's/^.*ssh_port: 22$/    ssh_port: 2223/g' /usr/local/www/gitlab-ce/config/gitlab.yml
+}
+
+
+postcreate_gitlab()
+{
+	local _ip
+
+	set +o xtrace
+	set +o errexit
+
+	# ssh expose ?
+	if [ ${GITLAB_SSH_EXPOSE} -ne 0 ]; then
+		expose mode=add in=${GITLAB_SSH_EXPOSE} out=${GITLAB_SSH_PORT}
+	fi
+	if [ ${GITLAB_HTTP_EXPOSE} -ne 0 ]; then
+		expose mode=add in=${GITLAB_HTTP_EXPOSE} out=${GITLAB_HTTP_PORT}
+	fi
+	if [ ${GITLAB_HTTPS_EXPOSE} -ne 0 ]; then
+		expose mode=add in=${GITLAB_HTTPS_EXPOSE} out=${GITLAB_HTTPS_PORT}
+	fi
+
+	# cbsd sysrc
+	sysrc \
+		syslogd_flags="-ss" \
+		sendmail_enable="NO" \
+		sendmail_submit_enable="NO" \
+		sendmail_outbound_enable="NO" \
+		sendmail_msp_queue_enable="NO" \
+		cron_enable="NO" \
+		sshd_enable="YES" \
+		sshd_flags="-oUseDNS=no -oPort=${GITLAB_SSH_PORT}" \
+		gitlab_enable="YES" \
+		postgresql_enable="YES" \
+		nginx_enable="YES" \
+		redis_enable="YES" \
+		gitlab_ssh_port="${GITLAB_SSH_PORT}" \
+		gitlab_http_port="${GITLAB_HTTP_PORT}" \
+		gitlab_https_port="${GITLAB_HTTPS_PORT}"
+
+	INIT_TIME=$( ${DATE_CMD} +%s )
+
+	jexec <<EOF
+# fix perms for skel files
+chown root:wheel /etc/login.conf /etc/login.conf.db /etc/mail/aliases /etc/mail/aliases.db
+service sshd restart
+EOF
+
+	configure_postgresql
+
+	# tests:
+	set +o xtrace
+	set -o errexit
+	tests/10_postgres_port.sh
+	set +o errexit
+	set -o xtrace
+
+	configure_postgresql_cred
+
+	# tests
+	set +o xtrace
+	set -o errexit
+	tests/20_postgres_cred.sh
+	set +o errexit
+	set -o xtrace
+
+	configure_redis
+
+	# tests
+	set +o xtrace
+	set -o errexit
+	tests/30_redis_process.sh
+	tests/40_redis_sock.sh
+	set +o errexit
+	set -o xtrace
+
+	configure_gitlab
+
+	configure_nginx
+
+	# tests
+	set +o xtrace
+	set -o errexit
+	tests/50_nginx_process.sh
+	tests/60_gitlab_status.sh
+	tests/70_login.sh
+	set +o errexit
+	set -o xtrace
+
+	configure_ssh
+
 
 #	# Create .gitlab_shell_secret symlink
 #	jexec ln -s /usr/local/www/gitlab-ce/.gitlab_shell_secret /usr/local/share/gitlab-shell/.gitlab_shell_secret
@@ -409,8 +449,7 @@ EOF
 ## Replace port for gitlab web interface
 #sed -i '' -e 's/^.*port: 80 .*$/    port: 10080/g' /usr/local/www/gitlab-ce/config/gitlab.yml
 ## gitlab ssh config
-##sed -i '' -e 's/^.*ssh_port: 22$/    ssh_port: 2223/g' /usr/local/www/gitlab-ce/config/gitlab.yml
-fi
+
 
 	set +o xtrace
 	# postmessage
