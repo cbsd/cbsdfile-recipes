@@ -10,7 +10,9 @@ fi
 
 GREP_VAL=""form.*action.*post""
 
-data=$( cbsd jget mode=quiet jname=gitlab data 2>/dev/null )
+[ -z "${jname}" ] && jname="gitlab"
+
+data=$( cbsd jget mode=quiet jname=${jname} data 2>/dev/null )
 . ${data}/etc/rc.conf
 
 max_retry=5
@@ -37,8 +39,15 @@ elif [ -n "${ipv6_first}" ]; then
 		sleep 1
 	done
 else
-	echo "Unable to determine ipv4_first/ipv6_first facts"
-	ret=1
+	ipv4_first=$( /usr/local/bin/cbsd jget jname=${jname} mode=quiet ip4_addr )
+	for retry in $( jot ${max_retry} ); do
+		printf "Check for login page http://${ipv4_first}:${gitlab_http_port}/users/sign_in ( filter cmd: ${GREP_VAL} )...[${retry}/${max_retry}]" 2>&1
+		${CURL_CMD} --no-progress-meter -L http://${ipv4_first}:${gitlab_http_port}/users/sign_in | grep "${GREP_VAL}"
+		ret=$?
+		[ ${ret} -eq 0 ] && break
+		retry=$(( retry + 1 ))
+		sleep 1
+	done
 fi
 
 exit ${ret}
