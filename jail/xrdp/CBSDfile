@@ -15,13 +15,15 @@ jail_victoria()
 	pkg_bootstrap=1
 	pkglist="xrdp xterm"
 
-	user_add='oleg'
-	user_gecos_oleg='oleg'
-	user_home_oleg='/home/oleg'
-	user_shell_oleg='/bin/csh'
-	user_member_groups_oleg='wheel'
+	user_add="oleg"
+	user_gecos_oleg="Oleg Ginzburg"
+	user_home_oleg="/home/oleg"
+	user_shell_oleg="/bin/csh"
+	user_member_groups_oleg="wheel"
 	# oleg pw
-	user_pw_oleg_crypt='$6$aWuleN/PE8VXM4Up$MuTenPfnnSjsRpaRG.E8EMS3ZMnYr6xB/1iMaTEsAAnRgHrh0.22xB/qU2Z6G1pVeh752H/NceNKIccjmFxyt0'
+	#user_pw_oleg="oleg"
+	# or crypt 'oleg' pw:
+	user_pw_oleg_crypt='$6$rVeOIvbduRdgEV./$ADF8bZnAqa0tIz7tbgM0V1WAW.sm6m4TfqqHwL1Uia41WYRQNnHVi/hknMigxMiq.Cvz.va9gdK8dL3Qq21k40'
 }
 
 postcreate_victoria()
