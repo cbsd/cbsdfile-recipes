@@ -10,6 +10,7 @@
 ### Postgresql settings
 # GitLab root password:
 # Default Postgresql version
+# FreeBSD defaults: 'grep ^PGSQL_DEFAULT bsd.default-versions.mk'
 [ -z "${GITLAB_PG_VER}" ] && GITLAB_PG_VER="13"
 
 
@@ -82,7 +83,7 @@ jail_gitlab()
 
 	host_hostname="${jname}.idefix.lan"
 	pkg_bootstrap="1"
-	pkglist="security/ca_root_nss devel/git databases/postgresql${GITLAB_PG_VER}-contrib databases/postgresql${GITLAB_PG_VER}-server www/nginx www/gitlab-ce"
+	pkglist="security/ca_root_nss databases/postgresql${GITLAB_PG_VER}-contrib databases/postgresql${GITLAB_PG_VER}-server www/nginx www/gitlab-ce"
 }
 
 # PostgresQL init function
@@ -223,7 +224,7 @@ su -l git -c "git config --global repack.writeBitmaps true"
 su -l git -c "git config --global receive.advertisePushOptions true"
 
 # Enable fsyncObjectFiles to reduce risk of repository corruption if the server crashes
-su -l git -c "git config --global core.fsyncObjectFiles true"
+su -l git -c "git config --global core.fsync objects,derived-metadata,reference"
 
 # Make sure .ssh directory exists
 su -l git -c "mkdir -m 0700 -p /usr/local/git/.ssh"
