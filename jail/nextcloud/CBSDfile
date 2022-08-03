@@ -2,10 +2,11 @@
 
 # Default Postgresql version ( e.g.: /usr/ports/databases/postgresql${PG_VER}-server )
 # see nextcloud_pkg_list file
+# grep ^PGSQL bsd.default-versions.mk
 PG_VER=13
 # Default PHP version ( e.g.: /usr/ports/lang/php${PHP_VER} )
 # see nextcloud_pkg_list file
-PHP_VER="74"
+PHP_VER="81"
 # to overwrite NEXTCLOUD FQDN servername from env/args:
 #  env H_NEXTCLOUD_FQDN=my.example.ru cbsd up
 [ -z "${H_NEXTCLOUD_FQDN}" ] && H_NEXTCLOUD_FQDN="nextcloud.mydomain.com"
@@ -28,12 +29,6 @@ H_SSLLOCATION=""
 
 quiet=0
 
-# deprecated for CBSD 13.0.21+
-# used to configure nginx
-jail_has_v4=0
-jail_has_v6=0
-jail_ips=
-
 jail_nextcloud()
 {
 	# to overwrite default settings:
@@ -43,7 +38,7 @@ jail_nextcloud()
 	ip4_addr="DHCP"
 	host_hostname="${jname}.my.domain"
 
-	# use 'cbsd up ver=12.2' for overwrite via args
+	# use 'cbsd up ver=13.2' for overwrite via args
 	ver="native"
 
 	pkglist=$( ${SED_CMD} -e "s:%%PG_VER%%:${PG_VER}:g" -e "s:%%PHP_VER%%:${PHP_VER}:g" nextcloud_pkg_list | ${TR_CMD} '\n' ' ' )
@@ -72,63 +67,12 @@ jail_nextcloud()
 }
 
 
-# deprecated for CBSD 13.0.21+
-# export:
-# jail_has_v4
-# jail_has_v6
-# jail_ip
-get_jail_ips()
-{
-	local _ip i
-
-	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
-
-	[ -z "${_ip}" ] && err 1 "${N1_COLOR}${CBSD_APP}: unable to determine jail IPs: ${N2_COLOR}${jname}${N0_COLOR}"
-
-	OIFS="${IFS}"
-	IFS=","
-	for i in ${_ip}; do
-		IFS="${OIFS}"
-		myip=
-		iptype ${i}
-		case $? in
-			1)
-				jail_has_v4=1
-				# ipv4, no cast
-				if [ -z "${jail_ip}" ]; then
-					jail_ip="${i}"
-				else
-					jail_ip="${jail_ip} ${i}"
-				fi
-				;;
-			2)
-				# ipv6, add brackets
-				jail_has_v6=1
-				if [ -z "${jail_ip}" ]; then
-					jail_ip="[${i}]"
-				else
-					jail_ip="${jail_ip} [${i}]"
-				fi
-				;;
-			*)
-				[ -z "${_ip}" ] && err 1 "${N1_COLOR}${CBSD_APP}: unknown jail IP type: ${N2_COLOR}${i}${N0_COLOR}"
-				;;
-		esac
-		IFS=","
-	done
-
-	IFS="${OIFS}"
-	return 0
-}
-
 postcreate_nextcloud()
 {
 	local _ip
 
 	set +o xtrace
 	set +o errexit
-	# deprecated for CBSD 13.0.21+
-	get_jail_ips
 
 	# turn off unnecessary services, enable nginx/php-fpm/postgresql/redis
 	sysrc \
@@ -234,7 +178,7 @@ EOF
 	set -o errexit
 	tests/50_nginx_process.sh
 	tests/55_nginx_port.sh
-	set +o errexit
+	#et +o errexit
 
 	# Fetch and install nextcloud
 	jexec <<EOF
@@ -254,11 +198,13 @@ su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set redis host --va
 su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set redis port --value=0 --type=integer'
 
 sed -i '' '$ d' /usr/local/www/nextcloud/config/config.php
-echo "  memcache.locking => '\\\OC\\\Memcache\\\Redis'," >> /usr/local/www/nextcloud/config/config.php
-echo "  memcache.local => '\\\OC\\\Memcache\\\APCu'," >> /usr/local/www/nextcloud/config/config.php
+echo "  'memcache.locking' => '\\\OC\\\Memcache\\\Redis'," >> /usr/local/www/nextcloud/config/config.php
+#echo "  'memcache.local' => '\\\OC\\\Memcache\\\APCu'," >> /usr/local/www/nextcloud/config/config.php
+echo "  'memcache.distributed' => '\\\OC\\\Memcache\\\Redis'," >> /usr/local/www/nextcloud/config/config.php
+echo "  'memcache.local' =>'\\\OC\\\Memcache\\\Redis' ," >> /usr/local/www/nextcloud/config/config.php
 echo ");" >> /usr/local/www/nextcloud/config/config.php
-#su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.locking --value="\OC\Memcache\Redis"'
-#su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.local --value="\OC\Memcache\APCu"'
+#su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.locking --value="\\\OC\\\Memcache\\\Redis"'
+#su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set memcache.local --value="\\\OC\\\Memcache\\\Redis"'
 EOF
 
 	trusted_num=1
@@ -269,7 +215,6 @@ EOF
 		jexec jname=${jname} cmd="su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains ${trusted_num} --value=${_ip}'"
 		trusted_num=$(( trusted_num + 1 ))
 	done
-
 
 	set -o errexit
 	tests/70_login.sh

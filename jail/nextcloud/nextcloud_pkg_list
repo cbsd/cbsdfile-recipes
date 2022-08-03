@@ -17,7 +17,6 @@ php%%PHP_VER%%-filter
 php%%PHP_VER%%-gd
 php%%PHP_VER%%-gmp
 php%%PHP_VER%%-iconv
-php%%PHP_VER%%-json
 php%%PHP_VER%%-mbstring
 php%%PHP_VER%%-pcntl
 php%%PHP_VER%%-pdo
@@ -36,7 +35,6 @@ php%%PHP_VER%%-ldap
 php%%PHP_VER%%-opcache
 php%%PHP_VER%%-pdo_pgsql
 php%%PHP_VER%%-pgsql
-php%%PHP_VER%%-openssl
 php%%PHP_VER%%-pecl-redis
 php%%PHP_VER%%-pdo_pgsql
 php%%PHP_VER%%-pgsql

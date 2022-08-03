@@ -2,10 +2,14 @@
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
 NC_CMD=$( which nc )
 
+env
+
 if [ -z "${NC_CMD}" ]; then
 	echo "no such nc"
 	exit 1
 fi
+
+echo "ipv4_first: ${ipv4_first}"
 
 if [ -n "${ipv4_first}" ]; then
 	# check via IPv4
