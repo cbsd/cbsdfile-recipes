@@ -21,8 +21,10 @@ elif [ -n "${ipv6_first}" ]; then
 	${CURL_CMD} -k -6 --no-progress-meter -L https://[${ipv6_first}]/login | grep "${GREP_VAL}"
 	ret=$?
 else
-	echo "Unable to determine ipv4_first/ipv6_first facts"
-	ret=1
+	ipv4_first=$( /usr/local/bin/cbsd jget jname=${jname} mode=quiet ip4_addr )
+	printf "Check for login page https://${ipv4_first}/login ( filter cmd: ${GREP_VAL} )..." 2>&1
+	${CURL_CMD} -k --no-progress-meter -L https://${ipv4_first}/login | grep "${GREP_VAL}"
+	ret=$?
 fi
 
 exit ${ret}
