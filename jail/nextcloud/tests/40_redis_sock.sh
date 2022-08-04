@@ -1,6 +1,8 @@
 #!/bin/sh
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
 
+export NOCOLOR=1
+
 res=$( cbsd jexec jname=nextcloud file -S /var/run/redis/redis.sock 2>/dev/null )
 ret=$?
 

@@ -1,6 +1,8 @@
 #!/bin/sh
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
 
+export NOCOLOR=1
+
 pid=$( cbsd jexec jname=nextcloud pgrep redis 2>/dev/null | grep . | awk '{printf $1}' | awk '{printf $1" "}' )
 
 if [ -n "${pid}" ]; then
