@@ -1,7 +1,10 @@
 #!/bin/sh
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+export NOCOLOR=1
 
-res=$( cbsd jexec jname=gitlab <<EOF
+[ -z "${jname}" ] && jname="gitlab"
+
+res=$( cbsd jexec jname=${jname} <<EOF
 /usr/local/bin/psql -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='gitlabhq_production'"
 EOF
 )

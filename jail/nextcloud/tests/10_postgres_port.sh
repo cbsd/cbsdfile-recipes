@@ -3,6 +3,7 @@ export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
 NC_CMD=$( which nc )
 
 export NOCOLOR=1
+[ -z "${jname}" ] && jname="nextcloud"
 
 if [ -z "${NC_CMD}" ]; then
 	echo "no such nc"
@@ -20,7 +21,6 @@ elif [ -n "${ipv6_first}" ]; then
 	${NC_CMD} -6 -z [${ipv6_first}] 5432 2>&1
 	ret=$?
 else
-	[ -z "${jname}" ] && jname="nextcloud"
 	ipv4_first=$( /usr/local/bin/cbsd jget jname=${jname} mode=quiet ip4_addr )
 	echo "Probing: ${ipv4_first}:5432" 2>&1
 	${NC_CMD} -z ${ipv4_first} 5432 2>&1

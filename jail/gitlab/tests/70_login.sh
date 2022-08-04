@@ -1,5 +1,8 @@
 #!/bin/sh
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+export NOCOLOR=1
+
+[ -z "${jname}" ] && jname="gitlab"
 
 CURL_CMD=$( which curl 2>/dev/null )
 
@@ -9,8 +12,6 @@ if [ -z "${CURL_CMD}" ]; then
 fi
 
 GREP_VAL=""form.*action.*post""
-
-[ -z "${jname}" ] && jname="gitlab"
 
 data=$( cbsd jget mode=quiet jname=${jname} data 2>/dev/null )
 . ${data}/etc/rc.conf

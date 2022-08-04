@@ -1,7 +1,10 @@
 #!/bin/sh
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+export NOCOLOR=1
 
-res=$( cbsd jexec jname=gitlab <<EOF
+[ -z "${jname}" ] && jname="gitlab"
+
+res=$( cbsd jexec jname=${jname} <<EOF
 su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:check RAILS_ENV=production"
 EOF
 )

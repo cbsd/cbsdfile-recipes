@@ -1,7 +1,10 @@
 #!/bin/sh
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+export NOCOLOR=1
 
-path=$( cbsd jget jname=mysql mode=quiet path 2>/dev/null )
+[ -z "${jname}" ] && jname="mysql"
+
+path=$( cbsd jget jname=${jname} mode=quiet path 2>/dev/null )
 
 printf "Check ${path}/tmp/mysql.sock socket..." 2>&1
 if [ -S ${path}/tmp/mysql.sock ]; then

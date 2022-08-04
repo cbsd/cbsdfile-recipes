@@ -1,7 +1,10 @@
 #!/bin/sh
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+export NOCOLOR=1
 
-res=$( cbsd jexec jname=gitlab file -S /var/run/redis/redis.sock 2>/dev/null )
+[ -z "${jname}" ] && jname="gitlab"
+
+res=$( cbsd jexec jname=${jname} file -S /var/run/redis/redis.sock 2>/dev/null )
 ret=$?
 
 if [ ${ret} -eq 0  ]; then

@@ -1,7 +1,9 @@
 #!/bin/sh
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+export NOCOLOR=1
+[ -z "${jname}" ] && jname="rtorrent"
 
-pid=$( cbsd jexec jname=rtorrent pgrep rtorrent 2>/dev/null | grep . | awk '{printf $1}' )
+pid=$( cbsd jexec jname=${jname} pgrep rtorrent 2>/dev/null | grep . | awk '{printf $1}' )
 
 if [ -n "${pid}" ]; then
 	echo "rtorrent process exist: ${pid}"

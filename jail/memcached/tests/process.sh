@@ -1,7 +1,10 @@
 #!/bin/sh
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+export NOCOLOR=1
 
-pid=$( cbsd jexec jname=memcached pgrep memcached 2>/dev/null | grep . | awk '{printf $1}' )
+[ -z "${jname}" ] && jname="memcached"
+
+pid=$( cbsd jexec jname=${jname} pgrep memcached 2>/dev/null | grep . | awk '{printf $1}' )
 
 if [ -n "${pid}" ]; then
 	echo "memcached process exist: ${pid}" 2>&1

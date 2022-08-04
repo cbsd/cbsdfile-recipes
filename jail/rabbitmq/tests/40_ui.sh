@@ -1,5 +1,7 @@
 #!/bin/sh
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+export NOCOLOR=1
+[ -z "${jname}" ] && jname="rabbitmq"
 
 CURL_CMD=$( which curl 2>/dev/null )
 
@@ -8,7 +10,7 @@ if [ -z "${CURL_CMD}" ]; then
 	exit 1
 fi
 
-ip4_addr=$( cbsd jget jname=rabbitmq mode=quiet ip4_addr 2>/dev/null )
+ip4_addr=$( cbsd jget jname=${jname} mode=quiet ip4_addr 2>/dev/null )
 GREP_VAL="start_app_login"
 
 case "${ip4_addr}" in

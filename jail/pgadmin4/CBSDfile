@@ -33,6 +33,7 @@ jail_pgadmin4()
 		py${PY_PREFIX}-werkzeug \
 		py${PY_PREFIX}-ndg-httpsclient \
 		py${PY_PREFIX}-sqlite3 \
+		py${PY_PREFIX}-pillow \
 		rust"
 
 	# rust to build cryptography module

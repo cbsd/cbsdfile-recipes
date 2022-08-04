@@ -1,5 +1,7 @@
 #!/bin/sh
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+export NOCOLOR=1
+[ -z "${jname}" ] && jname="rtorrent"
 
 CURL_CMD=$( which curl )
 
@@ -8,7 +10,7 @@ if [ -z "${CURL_CMD}" ]; then
 	exit 1
 fi
 
-ip4_addr=$( cbsd jget jname=rtorrent mode=quiet ip4_addr )
+ip4_addr=$( cbsd jget jname=${jname} mode=quiet ip4_addr )
 
 GREP_VAL="rtorrent"
 

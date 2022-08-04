@@ -16,7 +16,7 @@ jail_phpipam()
 	ver="native"
 	# install pgadmin4 deps
 
-	pkglist="databases/mysql57-server net-mgmt/phpipam php74-opcache graphics/php74-gd php74-iconv php74-dom php74-curl php74-ctype www/nginx"
+	pkglist="databases/mysql57-server net-mgmt/phpipam php81-opcache graphics/php81-gd php81-iconv php81-dom php81-curl php81-ctype www/nginx"
 
 	# set interface=0 when IP not manage by CBSD
 	interface="auto"

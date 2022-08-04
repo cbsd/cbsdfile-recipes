@@ -1,5 +1,7 @@
 #!/bin/sh
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+export NOCOLOR=1
+[ -z "${jname}" ] && jname="postgresql13"
 NC_CMD=$( which nc )
 
 if [ -z "${NC_CMD}" ]; then
@@ -7,7 +9,7 @@ if [ -z "${NC_CMD}" ]; then
 	exit 1
 fi
 
-ip4_addr=$( cbsd jget jname=postgresql13 mode=quiet ip4_addr )
+ip4_addr=$( cbsd jget jname=${jname} mode=quiet ip4_addr )
 
 echo "Probing: ${ip4_addr}:5432" 2>&1
 ${NC_CMD} -z ${ip4_addr} 5432 2>&1

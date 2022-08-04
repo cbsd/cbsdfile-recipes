@@ -1,7 +1,9 @@
 #!/bin/sh
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+export NOCOLOR=1
+[ -z "${jname}" ] && jname="rtorrent"
 
-path=$( cbsd jget mode=quiet jname=rtorrent path 2>/dev/null )
+path=$( cbsd jget mode=quiet jname=${jname} path 2>/dev/null )
 
 if [ -S "${path}/tmp/rpc.socket" ]; then
 	echo "RPC socket exist"

@@ -1,7 +1,9 @@
 #!/bin/sh
 export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+export NOCOLOR=1
+[ -z "${jname}" ] && jname="memcached"
 
-ip4_addr=$( cbsd jget mode=quiet jname=memcached ip4_addr 2>/dev/null | grep . | awk '{printf $1}' )
+ip4_addr=$( cbsd jget mode=quiet jname=${jname} ip4_addr 2>/dev/null | grep . | awk '{printf $1}' )
 
 if [ -z "${ip4_addr}" ]; then
 	echo "unable to determine ip4_addr" 2>&1
