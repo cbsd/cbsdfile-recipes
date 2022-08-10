@@ -55,7 +55,24 @@ IS_UPGRADE=0
 # global preup function
 preup()
 {
-	local _pwlen=0
+	local _pwlen=0 _kern_maxfilesperproc=
+
+	# check for maxopenfiles/perproc:
+	# yarn buld requirered more thean default 1000 files:
+	# 
+	# [webpack-cli] [Error: EMFILE: too many open files, open '/usr/local/www/gitlab-ce/node_modules/.cache/compression-webpack-plugin/tmp/d655487c'] {
+	#  errno: -24,
+	#  code: 'EMFILE',
+	#  syscall: 'open',
+	#  path: '/usr/local/www/gitlab-ce/node_modules/.cache/compression-webpack-plugin/tmp/d655487c'
+	#}
+	# error Command failed with exit code 2.
+
+	_kern_maxfilesperproc=$( ${SYSCTL_CMD} -qn kern.maxfilesperproc 2>/dev/null )
+
+	if [ -n "${_kern_maxfilesperproc}" ]; then
+		[ ${_kern_maxfilesperproc} -lt 2048 ] && err 1 "${N1_COLOR}yarn webpack build requires a large number of open files for build. Please set kern.maxfilesperproc sysctl value to 2048 or more, e.g.: ${N2_COLOR}/sbin/sysctl -w kern.maxfilesperproc=2048${N0_COLOR}"
+	fi
 
 	_pwlen=$( strlen "${GITLAB_ROOT_PASSWORD}" )
 	[ ${_pwlen} -lt 8 ] && err 1 "${N1_COLOR}Password too small, ${W1_COLOR}8${N1_COLOR} characters minimum: ${N2_COLOR}${GITLAB_ROOT_PASSWORD}${N0_COLOR}"
