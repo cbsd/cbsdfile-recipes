@@ -28,8 +28,6 @@ preup_powerdns()
 {
 	local _drill
 
-	export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
-
 	_drill=$( which drill 2>/dev/null )
 
 	[ ! -x ${_drill} ] && err 1 "${W1_COLOR}: no such drill, please install for tests${N0_COLOR}"
@@ -62,6 +60,24 @@ pip install -r /root/powerdnsadmin/requirements.txt || true
 /root/powerdns/poweradmin_install.sh install_only
 pkg clean -ya
 usr/local/etc/rc.d/powerdnsadmin onestart
+EOF
+
+	# postmessage
+	${CAT_CMD} <<EOF
+	${N1_COLOR}
+
+	UI available via: http://${ip4_addr}:9191
+
+	For correct PowerDNS-Admin installation you need to do a few additional steps:
+
+	1) open ${H2_COLOR}http://${ip4_addr}:9191${N1_COLOR} in browser
+	2) Use: 'Create an account' link
+	3) Login into PowerDNS-admin
+	4) in 'Settings->PDNS': set 'PDNS API URL' as: 'http://127.0.0.1:8081/' where 127.0.0.1 - PowerDNS IP
+	5) in 'Settings->PDNS': set valid 'PDNS API KEY': ('api-key' values from from pdns.conf) (mandatory: 'api=yes' 'api-key=XXX')
+	6) Disable new user sign up: in Settings->Authentication Settings': unset 'Allow users to sign up'
+
+	${N0_COLOR}
 EOF
 
 }
