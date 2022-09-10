@@ -1,0 +1,5 @@
+
+ For reconfigure powerdns, please run:
+
+   cbsd forms module=powerdns jname=$jname
+
