@@ -14,7 +14,11 @@ else
 	echo "drill @${ipv4_first}" 2>&1
 fi
 
+echo "drill @${ipv4_first} ${REC_TEST}..."
+
 test=$( drill @${ipv4_first} ${REC_TEST} 2>/dev/null | grep ^${REC_TEST} )
+
+echo "RES: ${test}"
 
 if [ -z "${test}" ]; then
 	echo "can't resolv test records: ${REC_TEST}"

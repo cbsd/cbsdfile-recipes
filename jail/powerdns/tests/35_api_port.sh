@@ -28,4 +28,6 @@ else
 	ret=$?
 fi
 
+echo "RET: ${ret}"
+
 exit ${ret}

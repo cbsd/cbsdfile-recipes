@@ -59,7 +59,12 @@ postcreate_powerdns()
 pip install -r /root/powerdnsadmin/requirements.txt || true
 /root/powerdns/poweradmin_install.sh install_only
 pkg clean -ya
-usr/local/etc/rc.d/powerdnsadmin onestart
+/usr/local/etc/rc.d/powerdnsadmin onestart
+# API may start slowly, waiting for 5sec..
+sleep 5
+
+pkg remove -y rust git
+
 EOF
 
 	# postmessage
