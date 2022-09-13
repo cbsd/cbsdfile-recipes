@@ -80,8 +80,7 @@ if [ ${ret} -ne 0 ]; then
 	exit ${ret}
 fi
 
-#vars=$( cbsd forms module=redis vars | tr ' ' "#" )
-vars=$( cbsd forms module=redis vars )
+vars=$( cbsd forms module=${jname} vars )
 
 package_version=
 
