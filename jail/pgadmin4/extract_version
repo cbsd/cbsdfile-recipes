@@ -1,0 +1,17 @@
+#!/bin/sh
+# extract package version for marketplace dashboard
+export CBSD_PWD=/var/empty
+
+ver=$( cbsd jexec jname=redis <<EOF
+export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+pip list | grep pgadmin4 | awk '{printf $2}'
+EOF
+)
+
+if [ -n "${ver}" ]; then
+	echo "${ver}" | /usr/bin/awk '{printf $1}'
+else
+	echo "unknown"
+fi
+
+exit 0
