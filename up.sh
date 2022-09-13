@@ -12,6 +12,8 @@ cmd_string=
 jobname_file="image-${jname}-${arch}-${ver}"
 log_file="${LOG_DIR}/${jobname_file}-${log_date}.log"
 
+[ -r ${LOG_DIR}/package_version_${jname} ] && rm -f ${LOG_DIR}/package_version_${jname}
+
 if [ "${myarch}" != "${arch}" ]; then
 	echo "not native arch: ${myarch}/${arch}" >> ${log_file} 2>&1
 	exit 1
@@ -33,6 +35,7 @@ fi
 echo "template found: ${env_path}/CBSDfile" >> ${log_file} 2>&1
 
 # CBSDFile
+[ -r /usr/jails/formfile/${jname}.sqlite ] && rm -f /usr/jails/formfile/${jname}.sqlite
 cd ${env_path}
 cmd_string="cbsd up ver=${ver}"
 ${cmd_string} >> ${log_file} 2>&1

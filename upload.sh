@@ -60,17 +60,40 @@ if [ ${ret} -ne 0 ]; then
 	exit ${ret}
 fi
 
-${scp_string} /usr/jails/export/${jname}.img ${UPLOAD_SSH_USER}@${UPLOAD_SSH_HOST}:${remote_dir}/${jname}.img
+/usr/local/bin/sqlite3 /usr/jails/formfile/${jname}.sqlite "SELECT longdesc FROM system;" > /usr/jails/export/${jname}.desc
 
+${scp_string} /usr/jails/export/${jname}.img ${UPLOAD_SSH_USER}@${UPLOAD_SSH_HOST}:${remote_dir}/${jname}.img
 ret=$?
+
 if [ ${ret} -ne 0 ]; then
 	echo "scp /usr/jails/export/${jname}.img failed" >> ${log_file} 2>&1
 	echo "${scp_string} ${path}/base.txz ${UPLOAD_SSH_USER}@${UPLOAD_SSH_HOST}:${remote_dir}/${jname}.img" >> ${log_file} 2>&1
 	exit ${ret}
 fi
 
+${scp_string} /usr/jails/export/${jname}.desc ${UPLOAD_SSH_USER}@${UPLOAD_SSH_HOST}:${remote_dir}/${jname}.desc
+ret=$?
+
+if [ ${ret} -ne 0 ]; then
+	echo "scp /usr/jails/export/${jname}.img failed" >> ${log_file} 2>&1
+	echo "${scp_string} ${path}/base.txz ${UPLOAD_SSH_USER}@${UPLOAD_SSH_HOST}:${remote_dir}/${jname}.img" >> ${log_file} 2>&1
+	exit ${ret}
+fi
+
+#vars=$( cbsd forms module=redis vars | tr ' ' "#" )
+vars=$( cbsd forms module=redis vars )
+
+package_version=
+
+if [ -r ${LOG_DIR}/package_version_${jname} ]; then
+	package_version=$( cat ${LOG_DIR}/package_version_${jname} | awk '{printf $1}' )
+fi
+
+
+echo "/root/bin/calcimg.sh -j ${jname} -e ${emulator} -f ${ver} -a ${arch} -s 0 -v "${package_version}" -z '${vars}'" | tee -a ${log_file}
+
 timeout 60 ${ssh_string} <<EOF
-/root/bin/calcimg.sh -j ${jname} -e ${emulator} -v ${ver} -a ${arch} -s 0
+/root/bin/calcimg.sh -j ${jname} -e ${emulator} -f ${ver} -a ${arch} -s 0 -v "${package_version}" -z '${vars}'
 EOF
 
 ret=$?

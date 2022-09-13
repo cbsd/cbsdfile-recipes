@@ -70,4 +70,9 @@ for _test in ${MY_TEST}; do
 done
 set +e
 
+# get package version
+if [ -r ${env_path}/extract_version ]; then
+	${env_path}/extract_version > ${LOG_DIR}/package_version_${jname}
+fi
+
 exit 0
