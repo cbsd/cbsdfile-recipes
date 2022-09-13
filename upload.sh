@@ -60,7 +60,13 @@ if [ ${ret} -ne 0 ]; then
 	exit ${ret}
 fi
 
-/usr/local/bin/sqlite3 /usr/jails/formfile/${jname}.sqlite "SELECT longdesc FROM system;" > /usr/jails/export/${jname}.desc
+if [ -r /usr/jails/formfile/${jname}.sqlite ]; then
+	/usr/local/bin/sqlite3 /usr/jails/formfile/${jname}.sqlite "SELECT longdesc FROM system;" > /usr/jails/export/${jname}.desc
+	is_forms=1
+else
+	echo "not available" > /usr/jails/export/${jname}.desc
+	is_forms=0
+fi
 
 ${scp_string} /usr/jails/export/${jname}.img ${UPLOAD_SSH_USER}@${UPLOAD_SSH_HOST}:${remote_dir}/${jname}.img
 ret=$?
@@ -80,7 +86,11 @@ if [ ${ret} -ne 0 ]; then
 	exit ${ret}
 fi
 
-vars=$( cbsd forms module=${jname} vars )
+if [ ${is_forms} -eq 1 ]; then
+	vars=$( cbsd forms module=${jname} vars )
+else
+	vars=
+fi
 
 package_version=
 
