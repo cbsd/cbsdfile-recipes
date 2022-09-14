@@ -3,8 +3,8 @@
 export CBSD_PWD=/var/empty
 export NOCOLOR=1
 
-ver=$( cbsd jexec jname=rtorrent <<EOF
-/usr/sbin/pkg info rtorrent | /usr/bin/grep ^Version | /usr/bin/cut -d : -f 2 | /usr/bin/awk '{printf $1}'
+ver=$( cbsd jexec jname=sambashare <<EOF
+/usr/sbin/pkg info samba413 | /usr/bin/grep ^Version | /usr/bin/cut -d : -f 2 | /usr/bin/awk '{printf $1}'
 EOF
 )
 
