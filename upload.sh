@@ -64,7 +64,11 @@ if [ -r /usr/jails/formfile/${jname}.sqlite ]; then
 	/usr/local/bin/sqlite3 /usr/jails/formfile/${jname}.sqlite "SELECT longdesc FROM system;" > /usr/jails/export/${jname}.desc
 	is_forms=1
 else
-	echo "not available" > /usr/jails/export/${jname}.desc
+	if [ -r "${env_path}/descr" ]; then
+		cat ${env_path}/descr > /usr/jails/export/${jname}.desc
+	else
+		echo "description not available" > /usr/jails/export/${jname}.desc
+	fi
 	is_forms=0
 fi
 
