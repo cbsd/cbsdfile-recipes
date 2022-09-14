@@ -1,0 +1,26 @@
+# Example of using the marketplace of CBSD jail images
+jail_memcached()
+{
+	forms="memcached"
+
+	# Use remote image. You can comment this line to build the image locally.
+	from="https://dl.bsdstore.ru/img/`uname -m`/`uname -m`/`sysctl -n kern.osrelease | cut -d - -f 1`/${jname}/${jname}.img"
+
+	# to overwrite default settings, see 'cbsd forms module=memcached vars' for full list
+	# use 'cbsd forms' to re-configure settings in runtime.
+	# export H_MAX_CONNECTIONS=1024 H_TCP_PORT=1234 ..
+
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	ver="native"
+	interface="auto"
+	runasap=1
+	pkg_bootstrap=0
+}
+
+# Ensure we have forms-memcached module
+preup_memcached()
+{
+	# forms-based module, install it first
+	module mode=install forms-memcached
+}
