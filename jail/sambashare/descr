@@ -1,5 +1,16 @@
-pgAdmin is a management tool for PostgreSQL and derivative relational databases \
-such as EnterpriseDB's EDB Advanced Server. \
-It may be run either as a web or desktop application. \
+Samba is an attempt to implement an Active Directory compatible Domain \
+Controller. \
 \
-WWW: https://www.pgadmin.org
+This is a static image/template for CBSD that provides a Samba-based share in RW(!) mode \
+that is accessible without authentication ! \
+This can be useful for obtaining the SMB/CIFS resource as quickly as possible. \
+\
+If you want a full managed Samba service, please use the samba4 image/template. \
+\
+Usage: \
+\
+ \\${ip4_addr}\
+\
+or:\
+\
+  smb://${ip4_addr}\
