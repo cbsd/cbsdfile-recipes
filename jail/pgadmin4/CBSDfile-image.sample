@@ -1,7 +1,6 @@
 # Example of using the marketplace of CBSD jail images
 
 # pgadmin4 default credential
-# pgadmin4 default credential
 PGADMIN_SETUP_EMAIL="root@example.org"
 PGADMIN_SETUP_PASSWORD="root"
 
