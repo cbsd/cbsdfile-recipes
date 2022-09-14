@@ -30,8 +30,8 @@ reload_cmd="reload"
 pgadmin4_start()
 {
 	export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
-	export PGADMIN_SETUP_EMAIL="root@localhost"
-	export PGADMIN_SETUP_PASSWORD="admin"
+	export PGADMIN_SETUP_EMAIL="root@example.org"
+	export PGADMIN_SETUP_PASSWORD="root"
 
 	[ ! -d ${logdir} ] && mkdir -p ${logdir}
 	touch ${logfile}
