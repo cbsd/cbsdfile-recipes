@@ -14,3 +14,17 @@ Usage: \
 or:\
 \
   smb://${ip4_addr}\
+
+
+FreeBSD: mount_smbfs -I 172.16.0.3 //guest@172.16.0.3/share /mnt
+Linux: mount -t smbfs -o username=guest,password=guest //server/share /mountpoint
+Linux +  cifs-utils: 
+
+cat > /root/.examplecredentials <<EOF
+username=guest
+password=guest
+EOF
+
+chmod 0400 /root/.examplecredentials
+
+mount -t cifs -o rw,vers=3.0,credentials=/root/.examplecredentials //192.168.18.112/sharedDir /media/share
