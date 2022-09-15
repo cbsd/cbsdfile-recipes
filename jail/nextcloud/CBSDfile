@@ -190,7 +190,8 @@ chown -R www:www /usr/local/www/nextcloud
 
 # configure nextcloud
 su -m www -c 'php /usr/local/www/nextcloud/occ maintenance:install --database=pgsql --database-name=nextcloud --database-user=nextcloud --database-pass="${H_DBPASSWD}" --database-host=localhost --admin-user="${H_NCADMIN}" --admin-pass="${H_NCPASSWD}" --data-dir=/var/storage'
-
+echo "${H_NCPASSWD}" > /root/initial_nc_passwort.txt
+chmod 0400 /root/initial_nc_passwort.txt
 su -m www -c 'php /usr/local/www/nextcloud/occ db:add-missing-indices'
 su -m www -c 'php /usr/local/www/nextcloud/occ db:convert-filecache-bigint'
 
@@ -231,5 +232,7 @@ EOF
 	Nextcloud admin password:	"${H_NCPASSWD}"
 	PostgreSQL postgres password:	"${H_DBPASSWD}"
 	SSL password:			"${H_SSLPASSWD}"
+
+	PS: default password stored in /root/initial_nc_passwort.txt file;
 EOF
 }
