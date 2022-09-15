@@ -3,7 +3,7 @@
 /**
  * database connection details
  ******************************/
-$db['host'] = 'localhost';
+$db['host'] = '127.0.0.1';
 $db['user'] = 'phpipam';
 $db['pass'] = '%%MYSQL_PHPIPAM_PASSWORD%%';
 $db['name'] = 'phpipam';
@@ -32,20 +32,16 @@ $db['webhost'] = '';
 
      php 5.3.7 required
  ******************************/
-$db['ssl']        = false;                           // true/false, enable or disable SSL as a whole
-$db['ssl_key']    = '/path/to/cert.key';             // path to an SSL key file. Only makes sense combined with ssl_cert
-$db['ssl_cert']   = '/path/to/cert.crt';             // path to an SSL certificate file. Only makes sense combined with ssl_key
-$db['ssl_ca']     = '/path/to/ca.crt';               // path to a file containing SSL CA certs
-$db['ssl_capath'] = '/path/to/ca_certs';             // path to a directory containing CA certs
-$db['ssl_cipher'] = 'DHE-RSA-AES256-SHA:AES128-SHA'; // one or more SSL Ciphers
-$db['ssl_verify'] = 'true';                          // Verify Common Name (CN) of server certificate?
+$db['ssl']        = false;                             // true/false, enable or disable SSL as a whole
+// $db['ssl_key']    = '/path/to/cert.key';               // path to an SSL key file. Only makes sense combined with ssl_cert
+// $db['ssl_cert']   = '/path/to/cert.crt';               // path to an SSL certificate file. Only makes sense combined with ssl_key
+// $db['ssl_ca']     = '/path/to/ca.crt';                 // path to a file containing SSL CA certs
+// $db['ssl_capath'] = '/path/to/ca_certs';               // path to a directory containing CA certs
+// $db['ssl_cipher'] = 'HIGH:!PSK:!SHA:!MD5:!RC4:!aNULL'; // one or more SSL Ciphers, see openssl ciphers -v '....'
+// $db['ssl_verify'] = 'true';                            // Verify Common Name (CN) of server certificate?
 
-
-/**
- * temporary table type to create slave subnets table
- * (MEMORY, InnoDB)
- ******************************/
-$db['tmptable_engine_type'] = "MEMORY";
+$db['tmptable_engine_type'] = "MEMORY";                // Temporary table type to construct complex queries (MEMORY, InnoDB)
+$db['use_cte'] = 1;                                    // Use recursive CTE queries [>=MariaDB 10.2.2, >=MySQL 8.0] (0=disabled, 1=autodetect, 2=force enable)
 
 
 /**
@@ -64,6 +60,7 @@ $config['removed_addresses_timelimit'] = 86400 * 7;  // int, after how many seco
 # resolveIPaddresses.php script parameters
 $config['resolve_emptyonly']           = true;       // if true it will only update the ones without DNS entry!
 $config['resolve_verbose']             = true;       // verbose response - prints results, cron will email it to you!
+$config['disable_main_login_form']     = false;      // disable main login form if you want use another authentification method by default (SAML, LDAP, etc.)
 
 
 /**
@@ -75,9 +72,12 @@ $config['resolve_verbose']             = true;       // verbose response - print
 $debugging = false;
 
 /*
- * API Crypt security provider. "mcrypt" or "openssl"
+ * API Crypt security provider. "mcrypt" or "openssl*"
+ * Supported methods:
+ *    openssl-128-cbc (alias openssl, openssl-128) *default
+ *    openssl-256-cbc (alias openssl-256)
  *
- * default as of 1.3.2 "openssl"
+ * default as of 1.3.2 "openssl-128-cbc"
  ******************************/
 // $api_crypt_encryption_library = "mcrypt";
 
@@ -99,8 +99,8 @@ $phpsessname = "phpipam";
 /**
  * Cookie SameSite settings ("None", "Lax"=Default, "Strict")
  * - "Strict" increases security
- * - "Lax" required for SAML2
- * - "None" requires HTTPS
+ * - "Lax" required for SAML2, some SAML topologies may require "None".
+ * - "None" requires HTTPS (implies "Secure;")
  */
 $cookie_samesite = "Lax";
 
@@ -133,31 +133,10 @@ define('BASE', "/");
 if(!defined('MCUNIQUE'))
 define('MCUNIQUE', "section");
 
-
-/**
- * SAML mappings
- ******************************/
-if(!defined('MAP_SAML_USER'))
-define('MAP_SAML_USER', true);    // Enable SAML username mapping
-
-if(!defined('SAML_USERNAME'))
-define('SAML_USERNAME', 'admin'); // Map SAML to explicit user
-
-
 /**
  * Permit private subpages - private apps under /app/tools/custom/<custom_app_name>/index.php
  ******************************/
 $private_subpages = array();
-
-
-/**
- * Google MAPs API key for locations to display map
- *
- *  Obtain key: Go to your Google Console (https://console.developers.google.com) and enable "Google Maps JavaScript API"
- *  from overview tab, so go to Credentials tab and make an API key for your project.
- ******************************/
-$gmaps_api_key         = "";
-$gmaps_api_geocode_key = "";
 
 /**
  * proxy connection details
@@ -169,12 +148,22 @@ $proxy_user     = 'USERNAME';                             // Proxy Username
 $proxy_pass     = 'PASSWORD';                             // Proxy Password
 $proxy_use_auth = false;                                  // Enable/Disable Proxy authentication
 
+$offline_mode   = true;                                   // Offline mode, disable server-side Internet requests (proxy/OpenStreetMap)
+
+/**
+ * Failed access
+ * Message to log into webserver logs in case of failed access, for further processing by tools like Fail2Ban
+ * The message can contain a %u parameter which will be replaced with the login user identifier.
+ ******************************/
+// $failed_access_message = '';
+
 /**
  * General tweaks
  ******************************/
 $config['logo_width']             = 220;                    // logo width
 $config['requests_public']        = true;                   // Show IP request module on login page
 $config['split_ip_custom_fields'] = false;                  // Show custom fields in separate table when editing IP address
+$config['footer_message']         = "";                     // Custom message included in the footer of every page
 
 /**
  * PHP CLI binary for scanning and network discovery.
@@ -182,11 +171,13 @@ $config['split_ip_custom_fields'] = false;                  // Show custom field
  * The default behaviour is to use the system wide default php version symlinked to php in PHP_BINDIR (/usr/bin/php).
  * If multiple php versions are present; overide selection with $php_cli_binary.
  */
+// $php_cli_binary = '/usr/bin/php7.1';
 $php_cli_binary = '/usr/local/bin/php';
-
 /**
  * Path to mysqldump binary
  *
  * default: '/usr/bin/mysqldump'
  */
+// $mysqldump_cli_binary = '/usr/bin/mysqldump';
 $mysqldump_cli_binary = '/usr/local/bin/mysqldump';
+$allow_untested_php_versions=true;
