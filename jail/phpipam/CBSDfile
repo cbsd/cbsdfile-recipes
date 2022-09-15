@@ -105,6 +105,9 @@ EOF
 	service mode=action php-fpm start || true
 	service mode=action nginx start || true
 
+	# wait a little after php-fpm/nginx restart
+	sleep 2
+
 	# postmessage
 	${CAT_CMD} <<EOF
 	${N1_COLOR}
