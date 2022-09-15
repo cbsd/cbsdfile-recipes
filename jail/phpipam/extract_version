@@ -1,0 +1,17 @@
+#!/bin/sh
+# extract package version for marketplace dashboard
+export CBSD_PWD=/var/empty
+export NOCOLOR=1
+
+ver=$( cbsd jexec jname=phpipam <<EOF
+/usr/sbin/pkg info phpipam | /usr/bin/grep ^Version | /usr/bin/cut -d : -f 2 | /usr/bin/awk '{printf $1}'
+EOF
+)
+
+if [ -n "${ver}" ]; then
+	echo "${ver}" | /usr/bin/awk '{printf $1}'
+else
+	echo "unknown"
+fi
+
+exit 0
