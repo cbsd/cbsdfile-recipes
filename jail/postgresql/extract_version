@@ -4,7 +4,7 @@
 export CBSD_PWD=/var/empty
 export NOCOLOR=1
 
-ver=$( cbsd jexec jname=postgresql13 <<EOF
+ver=$( cbsd jexec jname=postgresql <<EOF
 /usr/sbin/pkg info postgresql13-server | /usr/bin/grep ^Version | /usr/bin/cut -d : -f 2 | /usr/bin/awk '{printf $1}'
 EOF
 )
