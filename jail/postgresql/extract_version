@@ -1,5 +1,6 @@
 #!/bin/sh
 # extract package version for marketplace dashboard
+# grep PGSQL_DEFAULT /usr/ports/Mk/bsd.default-versions.mk
 export CBSD_PWD=/var/empty
 export NOCOLOR=1
 
