@@ -3,6 +3,11 @@ quiet=0
 
 jail_rabbitmq()
 {
+	# use 'cbsd forms module=rabbitmq' module
+	forms="rabbitmq"
+	# to overwrite default settings ( H_USER_PASSWORD2 = admin password ).
+	# export H_CLUSTER_NAME=myrabbit H_USER_PASSWORD2="mypassword"
+
 	ip4_addr=DHCP
 	host_hostname="${jname}.my.domain"
 	ver="native"
@@ -35,8 +40,15 @@ postcreate_rabbitmq()
 		sendmail_outbound_enable="NO" \
 		sendmail_msp_queue_enable="NO" \
 		syslogd_enable="NO" \
-		clear_tmp_enable="YES"
+		clear_tmp_enable="YES" \
+		rabbitmq_enable="YES"
 
-	forms module=rabbitmq inter=0
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
 
+	# show postmessage
+	cat <<EOF
+	${jname} url          : http://${_ip}:15672
+	${jname} default admin login: admin
+	${jname} default admin pass : admin
+EOF
 }
