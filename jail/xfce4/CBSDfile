@@ -87,6 +87,8 @@ postcreate_xfce4()
 	service xrdp-sesman restart
 	service xrdp restart
 
+	# wait a little before tests
+	sleep 5
 EOF
 
 
