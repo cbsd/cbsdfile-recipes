@@ -3,6 +3,13 @@ pkg_deps_for_build="llvm13 dialog4ports nasm pkgconf automake autoconf gmake lib
 
 jail_xfce4()
 {
+	if [ ! -r /usr/ports/net/xrdp/Makefile ]; then
+		echo "Current version used ports tree to build xfce. Please install ports first, e.g:"
+		echo "- portsnap fetch extract"
+		echo "or"
+		echo "cbsd portsup"
+	fi
+
 	# default xrdp/sesman required IPv6 stack, e.g.:
 	# ip4_addr="DHCP,DHCPv6"
 	# If you are using IPv6 you can install xrdp from packages only.
