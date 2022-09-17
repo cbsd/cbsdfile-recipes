@@ -27,6 +27,8 @@ postcreate_xfce4()
 	default RDP login: xuser
 	default RDP password: xuser
 
+	Use 'sudo' or 'doas' for root privileges.
+
 	E.g. FreeRDP connection string:
 
 	> xfreerdp +clipboard +fonts /rfx /size:1200x960 /u:xuser /p:xuser /v:${_ip}

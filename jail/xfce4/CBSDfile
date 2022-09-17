@@ -15,7 +15,7 @@ jail_xfce4()
 	# If you are using IPv6 you can install xrdp from packages only.
 	# But for support IPv4/jails, we need to rebuild xrdp from the ports with --without-ipv6 flags
 
-	pkglist="x11-wm/xfce4 net/xrdp x11-drivers/xorgxrdp x11/xorg"
+	pkglist="x11-wm/xfce4 net/xrdp x11-drivers/xorgxrdp x11/xorg security/sudo security/doas"
 	ip4_addr="DHCP"
 
 	host_hostname="${jname}.my.domain"
@@ -103,6 +103,8 @@ EOF
 
 	default RDP login: xuser
 	default RDP password: xuser
+
+	Use 'sudo' or 'doas' for root privileges.
 
 	E.g. FreeRDP connection string:
 
