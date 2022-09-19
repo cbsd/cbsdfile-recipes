@@ -39,7 +39,7 @@ postcreate_matomo()
 	  Database Server: 127.0.0.1
 	  Login: matomo
 	  Password: matomopass
-	  Database Name:matomo
+	  Database Name: matomo
 
 EOF
 }
