@@ -1,0 +1,59 @@
+# Install roundcube jail
+
+quiet=0
+
+jail_roundcube()
+{
+	# use 'cbsd forms module=roundcube' module
+	forms="roundcube"
+
+	# to overwrite default settings:
+	# export H_TIMEZONE="Europe/Berlin" \
+	# H_DB_ROUNDCUBE_PASSWORD="aihah8ieyohm1EeThepa" \
+	# H_ROUNDCUBE_PRODUCT_NAME="My Webmail" \
+	# H_ROUNDCUBE_SMTP_SERVER="smtp.example.org" \
+	# H_ROUNDCUBE_DEFAULT_HOST="imap.example.org" \
+	# H_ROUNDCUBE_DES_KEY="rcmail-!24ByteDESkey*Str" ...
+
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	ver="native"
+	interface="auto"
+	pkg_bootstrap=1
+	runasap=1
+}
+
+preup_roundcube()
+{
+	# forms-based module, install it first
+	module mode=install forms-roundcube
+}
+
+postcreate_roundcube()
+{
+	local _ip
+
+	# turn off unnecessary services
+	sysrc \
+		syslogd_flags="-ss -c" \
+		syslogd_enable="NO" \
+		cron_enable="NO" \
+		sendmail_enable="NO" \
+		sendmail_submit_enable="NO" \
+		sendmail_outbound_enable="NO" \
+		sendmail_msp_queue_enable="NO" \
+		clear_tmp_enable="YES" \
+
+	jexec <<EOF
+# PHP_FPM may start slowly, waiting for 5sec before tests
+sleep 5
+EOF
+
+	# postmessage
+	${CAT_CMD} <<EOF
+
+	UI available via: http://${ip4_addr}
+
+EOF
+
+}

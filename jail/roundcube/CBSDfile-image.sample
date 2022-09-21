@@ -1,0 +1,45 @@
+# Example of using the marketplace of CBSD jail images
+jail_roundcube()
+{
+	forms="roundcube"
+
+	# Use remote image. You can comment this line to build the image locally.
+	from="https://dl.bsdstore.ru/img/`uname -m`/`uname -m`/`sysctl -n kern.osrelease | cut -d - -f 1`/${jname}/${jname}.img"
+
+	# to overwrite default settings:
+	# export H_TIMEZONE="Europe/Berlin" \
+	# H_DB_ROUNDCUBE_PASSWORD="aihah8ieyohm1EeThepa" \
+	# H_ROUNDCUBE_PRODUCT_NAME="My Webmail" \
+	# H_ROUNDCUBE_SMTP_SERVER="smtp.example.org" \
+	# H_ROUNDCUBE_DEFAULT_HOST="imap.example.org" \
+	# H_ROUNDCUBE_DES_KEY="rcmail-!24ByteDESkey*Str" ...
+
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	ver="native"
+	interface="auto"
+	runasap=1
+	pkg_bootstrap=0
+}
+
+# Ensure we have forms-roundcube module
+preup_roundcube()
+{
+	# forms-based module, install it first
+	module mode=install forms-roundcube
+}
+
+postcreate_roundcube()
+{
+	local _ip
+
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+
+	# postmessage
+	${CAT_CMD} <<EOF
+
+	UI available via: http://${ip4_addr}
+
+EOF
+
+}
