@@ -113,6 +113,7 @@ if [ -n "${lock}" ]; then
 	exit 0
 else
 	# recursive execite via lockf wrapper
+	/usr/local/bin/cbsd portsup
 	[ ! -d "${LOG_DIR}" ] && mkdir -p ${LOG_DIR}
 	log_date=$( date "+%Y-%m-%d-%H-%M-%S" )
 	log_file="${LOG_DIR}/${jobname_file}-${emulator}-${jname}-${log_date}.log"
