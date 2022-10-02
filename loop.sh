@@ -32,7 +32,7 @@ buildimg() {
 		build_time_week="604800"
 		build_deadline_time=$(( st_time - build_time_week ))
 		if [ ${last_success_build_time} -gt ${build_deadline_time} ]; then
-			echo "last_success_build_time still in deadline range: ${last_success_build_time} > ${build_deadline_time}" >> ${log_file}
+			echo "last_success_build_time still in deadline range: skip ${jname}: ${last_success_build_time} > ${build_deadline_time}" >> ${log_file}
 			return 0
 		else
 			echo "deadline, time to build: ${last_success_build_time} < ${build_deadline_time}" >> ${log_file}
@@ -40,6 +40,8 @@ buildimg() {
 	else
 		echo "no last_success_build_time, time to build" >> ${log_file}
 	fi
+
+	echo "time to build: ${jname}" >> ${log_file}
 
 	# up
 	${MYDIR}/up.sh -e ${emulator} -j ${jname} -v ${ver} -d ${log_date}
