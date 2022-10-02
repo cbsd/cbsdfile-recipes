@@ -1,5 +1,0 @@
-
- For reconfigure memcached, please run:
-
-   cbsd forms module=memcached jname=$jname
-

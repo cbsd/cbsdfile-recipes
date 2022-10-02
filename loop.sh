@@ -75,29 +75,42 @@ buildimg() {
 	ret=$?
 
 	if [ ${ret} -ne 0 ]; then
-		echo "error: ${MYDIR}/upload.sh -e ${emulator} -j ${jname} -v ${ver} -d ${log_date}" >> ${log_file}
+		echo "error: ${MYDIR}/upload.sh -e ${emulator} -j ${jname} -v ${ver} -d ${log_date}: retcode ${ret}" >> ${log_file}
 		return ${ret}
 	fi
+
+	echo "upload done" >> ${log_file}
 
 	end_time=$( /bin/date +%s )
 	diff_time=$(( end_time - st_time ))
 
 	sysrc -qf ${jobname_result} last_success_build_time="${end_time}"
 	sysrc -qf ${jobname_result} last_success_build_duration="${diff_time}"
-	echo "build ${jname} image done in ${diff_time}" >> ${log_file}
+	echo "build ${jname} image done in ${diff_time}, update ${jobname_result}" >> ${log_file}
 
 	return 0
 }
 
 loop()
 {
+	local _cur _total
+
 	if [ "${jname}" = "ALL" ]; then
 		if [ ! -d ${MYDIR}/${emulator} ]; then
 			echo "no such dir for emulator: ${MYDIR}/${emulator}"
 			exit 1
 		fi
+
+		_total=0
+		_cur=0
 		for jname in $( find ${MYDIR}/${emulator} -depth 1 -maxdepth 1 -type d -exec basename {} \; ); do
 			[ "${jname}" = ".broken" ] && continue
+			_total=$(( _total + 1 ))
+		done
+		for jname in $( find ${MYDIR}/${emulator} -depth 1 -maxdepth 1 -type d -exec basename {} \; ); do
+			[ "${jname}" = ".broken" ] && continue
+			_cur=$(( _cur + 1 ))
+			echo "current build [${_cur}/${_total}]: ${jname}"
 			buildimg ${jname}
 			/usr/local/bin/cbsd jremove ${jname}
 		done

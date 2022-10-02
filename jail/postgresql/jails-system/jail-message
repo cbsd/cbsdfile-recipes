@@ -1,5 +1,0 @@
-
- For reconfigure postgresql, please run:
-
-   cbsd forms module=postgresql jname=$jname
-

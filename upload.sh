@@ -105,7 +105,7 @@ fi
 
 echo "/root/bin/calcimg.sh -j ${jname} -e ${emulator} -f ${ver} -a ${arch} -s 0 -v "${package_version}" -z '${vars}'" | tee -a ${log_file}
 
-timeout 60 ${ssh_string} <<EOF
+timeout 600 ${ssh_string} <<EOF
 /root/bin/calcimg.sh -j ${jname} -e ${emulator} -f ${ver} -a ${arch} -s 0 -v "${package_version}" -z '${vars}'
 EOF
 

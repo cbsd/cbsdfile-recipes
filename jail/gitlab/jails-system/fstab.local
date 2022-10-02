@@ -1,7 +1,0 @@
-# Uncomment for ZFS external volumes
-#zroot/gitlab/postgres /var/db/postgres zfs rw 0 0
-#zroot/gitlab/repositories /usr/local/git/repositories zfs rw 0
-
-# Uncomment for non-ZFS (UFS, GlusterFS/NFS/Ceph) external volumes
-#/shared/postgres /var/db/postgres zfs nullfs 0 0
-#/shared/repositories /usr/local/git/repositories nullfs rw 0
