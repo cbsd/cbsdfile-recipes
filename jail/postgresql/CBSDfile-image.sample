@@ -1,0 +1,27 @@
+# Example of using the marketplace of CBSD jail images
+# grep PGSQL_DEFAULT /usr/ports/Mk/bsd.default-versions.mk
+jail_postgresql()
+{
+	forms="postgresql"
+
+	# Use remote image. You can comment this line to build the image locally.
+	from="https://dl.bsdstore.ru/img/`uname -m`/`uname -m`/`sysctl -n kern.osrelease | cut -d - -f 1`/${jname}/${jname}.img"
+
+	# to overwrite default settings, see 'cbsd forms module=postgresql vars' for full list
+	# use 'cbsd forms' to re-configure settings in runtime.
+	# export H_SHARED_BUFFERS=256MB ..
+
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	ver="native"
+	interface="auto"
+	runasap=1
+	pkg_bootstrap=0
+}
+
+# Ensure we have forms-postgresql module
+preup_postgresql()
+{
+	# forms-based module, install it first
+	module mode=install forms-postgresql
+}

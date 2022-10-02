@@ -1,0 +1,5 @@
+
+ For reconfigure matomo, please run:
+
+   cbsd forms module=matomo jname=$jname
+

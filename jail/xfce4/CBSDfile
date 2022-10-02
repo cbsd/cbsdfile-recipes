@@ -1,0 +1,133 @@
+#
+pkg_deps_for_build="llvm13 dialog4ports nasm pkgconf automake autoconf gmake libtool"
+
+jail_xfce4()
+{
+	if [ ! -r /usr/ports/net/xrdp/Makefile ]; then
+		echo "Current version used ports tree to build xfce. Please install ports first, e.g:"
+		echo "- portsnap fetch extract"
+		echo "or"
+		echo "cbsd portsup"
+	fi
+
+	# default xrdp/sesman required IPv6 stack, e.g.:
+	# ip4_addr="DHCP,DHCPv6"
+	# If you are using IPv6 you can install xrdp from packages only.
+	# But for support IPv4/jails, we need to rebuild xrdp from the ports with --without-ipv6 flags
+
+	pkglist="x11-wm/xfce4 net/xrdp x11-drivers/xorgxrdp x11/xorg security/sudo security/doas"
+	ip4_addr="DHCP"
+
+	host_hostname="${jname}.my.domain"
+	pkg_bootstrap=1
+
+	# mount ports for when xrdp not rebuilded
+	if [ ! -r ${data}/var/db/xrdp.rebuilded ]; then
+		mount_ports=1
+	else
+		mount_ports=0
+	fi
+
+	# add custom user, e.g.: 'xuser'
+	user_add="xuser"
+	user_gecos_xuser="xuser"
+	user_home_xuser="/home/xuser"
+	user_shell_xuser="/bin/csh"
+	user_member_groups_xuser="wheel"
+	# xuser pw
+	user_pw_xuser="xuser"
+}
+
+postcreate_xfce4()
+{
+	local _ip
+	set +o xtrace
+
+	# forward in 3000/tcp to jail?
+	#expose mode=add in=3000 out=3000
+
+	# turn off unnecessary services
+	sysrc \
+		syslogd_flags="-ss" \
+		syslogd_enable="YES" \
+		cron_enable="NO" \
+		sendmail_enable="NO" \
+		sendmail_submit_enable="NO"\
+		sendmail_outbound_enable="NO" \
+		sendmail_msp_queue_enable="NO" \
+		dbus_enable="YES" \
+		xrdp_enable="YES" \
+		xrdp_sesman_enable="YES"
+
+	jexec <<EOF
+
+	if [ ! -r /var/db/xrdp.rebuilded ]; then
+		pkg install -y ${pkg_deps_for_build}
+		if [ \$? -ne 0 ]; then
+			echo "Failed to install ${pkg_deps_for_build}"
+			exit 1
+		fi
+		pkg remove -y xrdp
+		# rebuild xrdp with --disable-ipv6
+		env OPTIONS_UNSET_FORCE=IPV6 BATCH=no make -C /usr/ports/net/xrdp install
+		env OPTIONS_UNSET_FORCE=IPV6 BATCH=no make -C /usr/ports/net/xrdp clean
+
+		# https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=265728
+		echo "allowed_users = anybody" | tee -a /usr/local/etc/X11/Xwrapper.config
+
+		# remove build deps
+		pkg remove -f ${pkg_deps_for_build}
+
+		if [ -r /usr/local/etc/rc.d/xrdp ]; then
+			touch /var/db/xrdp.rebuilded
+		fi
+	fi
+
+	service dbus restart
+	service xrdp-sesman restart
+	service xrdp restart
+
+	# wait a little before tests
+	sleep 5
+EOF
+
+
+	## postmessage
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+
+	# show postmessage
+	cat <<EOF
+
+	Notes: For performance reasons, the RDP session is not encrypted by default ( crypt_level=none ).
+	Please change the crypt_level= settings in /usr/local/etc/xrdp/xrdp.ini depending on your case!
+
+	default RDP login: xuser
+	default RDP password: xuser
+
+	Use 'sudo' or 'doas' for root privileges.
+
+	E.g. FreeRDP connection string:
+
+	> xfreerdp +clipboard +fonts /rfx /size:1200x960 /u:xuser /p:xuser /v:${_ip}
+
+	Valid resolution: check xrandr, e.g:
+
+	2560x1440
+	2048x1152
+	1920x1200
+	1920x1080
+	1680x1050
+	1600x1200
+	1280x1024
+	1280x720
+	1200x960
+	1152x864
+	1024x768
+	800x600
+	720x576
+	720x480
+	640x480
+
+EOF
+
+}

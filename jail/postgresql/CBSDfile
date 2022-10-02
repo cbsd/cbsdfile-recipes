@@ -1,0 +1,41 @@
+# Install postgresql jail
+# grep PGSQL_DEFAULT /usr/ports/Mk/bsd.default-versions.mk
+quiet=0
+
+jail_postgresql()
+{
+	# use 'cbsd forms module=postgresql' module
+	forms="postgresql"
+	export H_POSTGRES_VER=13
+
+	# to overwrite default settings:
+	# export H_POSTGRES_VER=13 H_SHARED_BUFFERS=256MB ..
+
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	ver="native"
+	interface="auto"
+	pkg_bootstrap=1
+	runasap=1
+}
+
+preup_postgresql()
+{
+	# forms-based module, install it first
+	module mode=install forms-postgresql
+}
+
+postcreate_postgresql()
+{
+	local _ip
+
+	# turn off unnecessary services
+	sysrc \
+		syslogd_flags="-ss -c" \
+		cron_enable="NO" \
+		sendmail_enable="NO" \
+		sendmail_submit_enable="NO" \
+		sendmail_outbound_enable="NO" \
+		sendmail_msp_queue_enable="NO" \
+		postgresql_enable="YES"
+}

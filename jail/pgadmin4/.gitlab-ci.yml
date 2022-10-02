@@ -1,0 +1,96 @@
+---
+variables:
+  #WORKSPACE: "/home/gitlab-runner/builds"
+
+stages:
+  - up12_2
+  - test12_2
+  - export12_2
+  - up13_0
+  - test13_0
+  - export13_0
+  - up14_0
+  - test14_0
+  - export14_0
+
+jobUp12_2:
+  stage: up12_2
+  tags:
+    - srv-01
+  script:
+     - pwd
+     - sudo cbsd jdestroy pgadmin4 || true
+     - sudo cbsd up ver=12.2
+
+jobTest12_2:
+  stage: test12_2
+  script:
+  - sudo tests/login.sh
+  when: on_success
+  tags:
+    - srv-01
+
+jobExport12_2:
+  stage: export12_2
+  script:
+  - pwd
+  - sudo ./mkimg.sh 12.2
+  - sudo cbsd jdestroy pgadmin4
+  when: on_success
+  tags:
+    - srv-01
+
+jobUp13_0:
+  stage: up13_0
+  tags:
+    - srv-01
+  script:
+     - pwd
+     - sudo cbsd jdestroy pgadmin4 || true
+     - sudo cbsd up ver=13.0
+
+jobTest13_0:
+  stage: test13_0
+  script:
+  - sudo tests/login.sh
+  when: on_success
+  tags:
+    - srv-01
+
+jobExport13_0:
+  stage: export13_0
+  script:
+  - pwd
+  - sudo ./mkimg.sh 13.0
+  - sudo cbsd jdestroy pgadmin4
+  when: on_success
+  tags:
+    - srv-01
+
+jobUp14_0:
+  stage: up14_0
+  tags:
+    - srv-01
+  script:
+     - pwd
+     - sudo cbsd jdestroy pgadmin4 || true
+     - sudo cbsd up ver=14.0
+
+jobTest14_0:
+  stage: test14_0
+  script:
+  - sudo tests/login.sh
+  when: on_success
+  tags:
+    - srv-01
+
+jobExport14_0:
+  stage: export14_0
+  script:
+  - pwd
+  - sudo ./mkimg.sh 14.0
+  - sudo cbsd jdestroy pgadmin4
+  when: on_success
+  tags:
+    - srv-01
+

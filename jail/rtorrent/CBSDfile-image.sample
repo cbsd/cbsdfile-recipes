@@ -1,0 +1,26 @@
+# Example of using the marketplace of CBSD jail images
+jail_rtorrent()
+{
+	forms="rtorrent"
+
+	# Use remote image. You can comment this line to build the image locally.
+	from="https://dl.bsdstore.ru/img/`uname -m`/`uname -m`/`sysctl -n kern.osrelease | cut -d - -f 1`/${jname}/${jname}.img"
+
+	# to overwrite default settings, see 'cbsd forms module=rtorrent vars' for full list
+	# use 'cbsd forms' to re-configure settings in runtime.
+	# export H_PORT=1234 H_MAXMEMORY=1g ..
+
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	ver="native"
+	interface="auto"
+	runasap=1
+	pkg_bootstrap=0
+}
+
+# Ensure we have forms-rtorrent module
+preup_rtorrent()
+{
+	# forms-based module, install it first
+	module mode=install forms-rtorrent
+}

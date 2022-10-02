@@ -1,0 +1,57 @@
+# Install Samba jail with static config
+# with defined a RW share that is accessible without authentication !
+# To complete Samba jail (puppet-based) please use 'samba4' jail.
+
+quiet=0
+
+
+jail_poudr1()
+{
+	# use 'cbsd up ip4_addr=XXXX' for overwrite via args
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+
+	# use 'cbsd up ver=12.2' for overwrite via args
+	ver="native"
+
+	pkglist="ports-mgmt/poudriere www/nginx git-lite"
+
+	# set interface=0 when IP not manage by CBSD
+	interface="auto"
+
+	baserw=1
+
+	# jail options
+	allow_raw_sockets=1
+	allow_sysvipc=1
+	allow_raw_sockets=1
+	allow_nullfs=1
+	allow_procfs=1
+	allow_linprocfs=1
+	allow_linsysfs=1
+	allow_tmpfs=1
+	allow_mount=1
+	allow_zfs=1
+	allow_mlock=1
+
+	childrenmax=100
+
+	pkg_bootstrap=1
+}
+
+postcreate_poudr1()
+{
+	local _ip
+
+	# turn off unnecessary services
+	sysrc \
+		syslogd_flags="-ss" \
+		sendmail_enable="NO" \
+		sendmail_submit_enable="NO" \
+		sendmail_outbound_enable="NO" \
+		sendmail_msp_queue_enable="NO" \
+		cron_enable="NO" \
+		nginx_enable="YES" \
+		zfs_enable="YES"
+
+}

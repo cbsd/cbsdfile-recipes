@@ -1,0 +1,45 @@
+# Example of using the marketplace of CBSD jail images
+jail_matomo()
+{
+	forms="matomo"
+
+	# Use remote image. You can comment this line to build the image locally.
+	from="https://dl.bsdstore.ru/img/`uname -m`/`uname -m`/`sysctl -n kern.osrelease | cut -d - -f 1`/${jname}/${jname}.img"
+
+	# to overwrite default settings, see 'cbsd forms module=matomo vars' for full list
+	# use 'cbsd forms' to re-configure settings in runtime.
+	# export H_TIMEZONE=UTC H_DB_MATOMO_PASSWORD=newdbpassword H_PHP_MEMORY_LIMIT=1g ..
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	ver="native"
+	interface="auto"
+	runasap=1
+	pkg_bootstrap=0
+}
+
+# Ensure we have forms-matomo module
+preup_matomo()
+{
+	# forms-based module, install it first
+	module mode=install forms-matomo
+}
+
+postcreate_matomo()
+{
+	local _ip
+
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+
+	# show postmessage
+	cat <<EOF
+	${jname} URL          : http://${_ip}
+
+	Default settings for 'Database Setup' action:
+
+	  Database Server: 127.0.0.1
+	  Login: matomo
+	  Password: matomopass
+	  Database Name: matomo
+
+EOF
+}

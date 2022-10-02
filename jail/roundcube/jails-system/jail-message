@@ -1,0 +1,5 @@
+
+ For reconfigure roundcube, please run:
+
+   cbsd forms module=roundcube jname=$jname
+
