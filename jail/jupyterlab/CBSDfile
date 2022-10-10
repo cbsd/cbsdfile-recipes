@@ -1,0 +1,106 @@
+# Install jupyterlab jail
+# some defaults:
+PY_VERSION="3.9"												# use python ${PY_VERSION} by default, e.g: 3.9
+PYTHON_CMD="python${PY_VERSION}"										# default python interpreter: python${PY_VERSION}, e.g: python3.9
+PIP_CMD="pip-${PY_VERSION}"											# default pip cmd: pip-${PY_VERSION}, e.g: pip-3.9
+PY_PREFIX=$( echo ${PY_VERSION} | tr -d "." )									# py${PY_PREFIX}-<packages>, e.g: py39-openssl
+
+# to overwrite JUPYTERLAB FQDN servername from env/args:
+#  env H_JUPYTERLAB_FQDN=my.example.ru cbsd up
+[ -z "${H_JUPYTERLAB_FQDN}" ] && H_JUPYTERLAB_FQDN="nextcloud.mydomain.com"
+#
+H_SSLCOUNTRY=""
+#
+H_SSLSTATE=""
+#
+H_SSLLOCATION=""
+# set your email here, used in SSL cert/certbot
+# to overwrite H_SSLMAIL from env/args:
+# env H_SSLMAIL="your_mail@mydomain.com H_JUPYTERLAB_FQDN="nextcloud.mydomain.com" cbsd up
+[ -z "${H_SSLMAIL}" ] && H_SSLMAIL=""
+
+quiet=1
+
+jail_jupyterlab()
+{
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	pkg_bootstrap=1
+	ver="native"
+
+	# pyXX-wheel not direct deps, to mute
+	# Using legacy 'setup.py install' for XXX, since package 'wheel' is not installed.
+	pkglist="python${PYTHON_PREFIX} py${PY_PREFIX}-wheel py${PY_PREFIX}-pip py${PY_PREFIX}-sqlite3 py${PY_PREFIX}-pyzmq"
+
+	# add custom user, e.g.: 'jupyter'
+	user_add="jupyter"
+	user_gecos_jupyter="jupyter"
+	user_home_jupyter="/home/jupyter"
+	user_shell_jupyter="/bin/csh"
+	user_member_groups_jupyter="wheel"
+	# jupyter pw
+	user_pw_jupyter="jupyter"
+}
+
+postcreate_jupyterlab()
+{
+	local _ip
+
+	# execute cmd inside jail
+	jexec <<EOF
+
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
+set -o errexit
+
+# test for python installed
+if [ ! -x /usr/local/bin/${PYTHON_CMD} ]; then
+	echo "no such python ${PYTHON_CMD}"
+	exit 1
+fi
+if [ ! -x /usr/local/bin/${PIP_CMD} ]; then
+	echo "no such pip"
+	exit 1
+fi
+
+ln -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python
+ln -sf /usr/local/bin/${PIP_CMD} /usr/local/bin/pip
+
+# use "notebook", "jupyterlab", "voila"
+su - jupyter -c "/usr/local/bin/pip install --user jupyterlab"
+su - jupyter -c "openssl req -x509 -nodes -days 365 -newkey rsa:2048  -subj '/C=${H_SSLCOUNTRY}/ST=${H_SSLSTATE}/L=${H_SSLLOCATION}/CN=${H_JUPYTERLAB_FQDN}/emailAddress=${H_SSLMAIL}' -keyout /home/jupyter/mykey.key -out /home/jupyter/mycert.pem"
+su - jupyter -c "mkdir -p /usr/home/jupyter/.jupyter"
+su - jupyter -c "mkdir /usr/home/jupyter/notebooks"
+mkdir /var/run/jupyter
+chown jupyter /var/run/jupyter
+EOF
+
+sed -e "s:%%IP4_ADDR%%:${ip4_addr}:g" files/jupyter_server_config.py.tmpl > files/jupyter_server_config.py
+jscp files/jupyter ${jname}:/usr/local/etc/rc.d/
+jscp files/jupyter_server_config.py ${jname}:/usr/home/jupyter/.jupyter/
+jscp files/jupyter_server_config.json ${jname}:/usr/home/jupyter/.jupyter/
+rm -f files/jupyter_server_config.py
+
+	# turn off unnecessary services
+	sysrc \
+		syslogd_enable="NO" \
+		syslogd_flags="-ss -c" \
+		cron_enable="NO" \
+		sendmail_enable="NO" \
+		sendmail_submit_enable="NO" \
+		sendmail_outbound_enable="NO" \
+		sendmail_msp_queue_enable="NO" \
+		jupyter_enable="YES"
+
+
+	service mode=action jupyter start || true
+	echo "waiting for service..."
+	sleep 10		# waiting for service ready
+
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+
+	# postmessage
+	cat <<EOF
+	${jname} url          : http://${_ip}:8888/lab
+	${jname} default pass : jupyter
+EOF
+}
