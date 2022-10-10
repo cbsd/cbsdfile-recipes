@@ -1,0 +1,70 @@
+#!/bin/sh
+#
+# PROVIDE: jupyter
+# REQUIRE: LOGIN
+#
+# Add the following lines to /etc/rc.conf to enable jupyter server
+#
+#
+# jupyter_enable (bool): Set to "NO" by default,
+#                         Set it to "YES" to enable jupyter server
+
+. /etc/rc.subr
+
+name=jupyter
+command=/home/jupyter/.local/bin/jupyter
+rcvar=jupyter_enable
+
+load_rc_config $name
+
+jupyter_enable="${jupyter_enable-"NO"}" 
+jupyter_user="${jupyter_user-"jupyter"}" 
+jupyter_pidfile="${jupyter_pidfile:-"/var/run/jupyter/jupyter.pid"}"  
+
+# /etc/rc.subr use $pidfile (not ${name}_pidfile)
+pidfile="${jupyter_pidfile}" 
+
+start_cmd="su - ${jupyter_user} -c '${command} server' &" 
+stop_cmd="${name}_stop" 
+status_cmd="${name}_status" 
+getval_cmd="${name}_getval" 
+
+jupyter_stop()
+{
+    jupyter_pid=$(pgrep -f "jupyter-server")
+
+    echo "Stopping ${name}." 
+    kill -s TERM "$(cat "${jupyter_pidfile}")" 
+
+    echo "Stopping ${name}." 
+    kill -s TERM "${jupyter_pid}" 
+
+    rm ${jupyter_pidfile}
+}
+
+jupyter_status()
+{
+    # Try its best to find the service's status
+    if [ -f "${jupyter_pidfile}" ]
+    then
+        jupyter_pid="$(cat "${jupyter_pidfile}")" 
+    fi
+
+    if [ -z "${jupyter_pid}" ]
+    then
+    jupyter_pid=$(pgrep -f "jupyter-server")
+    [ -n "${jupyter_pid}" ] && echo "${jupyter_pid}" > "${jupyter_pidfile}" 
+    fi
+
+    if [ -n "${jupyter_pid}" ]
+    then
+        echo "${name} running with pid: $jupyter_pid" 
+    else
+        echo "${name} not running? (pid not found)" 
+    fi
+}
+
+command_args=" >/dev/null 2>&1 &" 
+
+load_rc_config $name
+run_rc_command "$1" 
