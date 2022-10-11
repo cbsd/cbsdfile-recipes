@@ -7,7 +7,7 @@ PY_PREFIX=$( echo ${PY_VERSION} | tr -d "." )									# py${PY_PREFIX}-<packages
 
 # to overwrite JUPYTERLAB FQDN servername from env/args:
 #  env H_JUPYTERLAB_FQDN=my.example.ru cbsd up
-[ -z "${H_JUPYTERLAB_FQDN}" ] && H_JUPYTERLAB_FQDN="nextcloud.mydomain.com"
+[ -z "${H_JUPYTERLAB_FQDN}" ] && H_JUPYTERLAB_FQDN="jupyterlab.mydomain.com"
 #
 H_SSLCOUNTRY=""
 #
@@ -16,10 +16,8 @@ H_SSLSTATE=""
 H_SSLLOCATION=""
 # set your email here, used in SSL cert/certbot
 # to overwrite H_SSLMAIL from env/args:
-# env H_SSLMAIL="your_mail@mydomain.com H_JUPYTERLAB_FQDN="nextcloud.mydomain.com" cbsd up
+# env H_SSLMAIL="your_mail@mydomain.com H_JUPYTERLAB_FQDN="jupyterlab.mydomain.com" cbsd up
 [ -z "${H_SSLMAIL}" ] && H_SSLMAIL=""
-
-quiet=1
 
 jail_jupyterlab()
 {

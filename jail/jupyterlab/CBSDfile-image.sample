@@ -1,0 +1,46 @@
+# Example of using the marketplace of CBSD jail images
+
+# to overwrite JUPYTERLAB FQDN servername from env/args:
+#  env H_JUPYTERLAB_FQDN=my.example.ru cbsd up
+[ -z "${H_JUPYTERLAB_FQDN}" ] && H_JUPYTERLAB_FQDN="jupyterlab.mydomain.com"
+#
+H_SSLCOUNTRY=""
+#
+H_SSLSTATE=""
+#
+H_SSLLOCATION=""
+# set your email here, used in SSL cert/certbot
+# to overwrite H_SSLMAIL from env/args:
+# env H_SSLMAIL="your_mail@mydomain.com H_JUPYTERLAB_FQDN="jupyterlab.mydomain.com" cbsd up
+[ -z "${H_SSLMAIL}" ] && H_SSLMAIL=""
+
+jail_jupyterlab()
+{
+	from="https://dl.bsdstore.ru/img/`uname -m`/`uname -m`/`sysctl -n kern.osrelease | cut -d - -f 1`/${jname}/${jname}.img"
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	ver="native"
+	interface="auto"
+	runasap=1
+	pkg_bootstrap=0
+}
+
+postcreate_jupyterlab()
+{
+	local _ip
+
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+
+	# regenerate SSL cert for custom domain
+	jexec <<EOF
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
+set -o errexit
+su - jupyter -c "openssl req -x509 -nodes -days 365 -newkey rsa:2048  -subj '/C=${H_SSLCOUNTRY}/ST=${H_SSLSTATE}/L=${H_SSLLOCATION}/CN=${H_JUPYTERLAB_FQDN}/emailAddress=${H_SSLMAIL}' -keyout /home/jupyter/mykey.key -out /home/jupyter/mycert.pem"
+EOF
+
+	# show postmessage
+	cat <<EOF
+	${jname} url          : http://${_ip}:8888/lab
+	${jname} default pass : jupyter
+EOF
+}
