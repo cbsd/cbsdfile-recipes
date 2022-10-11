@@ -279,7 +279,7 @@ c.ServerApp.certfile = '/home/jupyter/mycert.pem'
 
 ## The IP address the Jupyter server will listen on.
 #  Default: 'localhost'
-c.ServerApp.ip = '%%IP4_ADDR%%'
+c.ServerApp.ip = '0.0.0.0'
 
 ## Supply extra arguments that will be passed to Jinja environment.
 #  Default: {}

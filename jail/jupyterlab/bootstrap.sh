@@ -4,7 +4,7 @@
 
 cat <<EOF
 
-	jupyterlab UI port: 8888  ( http://$ip4_addr:8888/lab )
+	jupyterlab UI port: 8888  ( https://$ip4_addr:8888/lab )
 	jupyterlab default pass : jupyter
 
 EOF

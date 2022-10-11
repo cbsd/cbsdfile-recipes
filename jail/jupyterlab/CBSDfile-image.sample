@@ -40,7 +40,7 @@ EOF
 
 	# show postmessage
 	cat <<EOF
-	${jname} url          : http://${_ip}:8888/lab
+	${jname} url          : https://${_ip}:8888/lab
 	${jname} default pass : jupyter
 EOF
 }

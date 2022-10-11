@@ -63,20 +63,16 @@ fi
 ln -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python
 ln -sf /usr/local/bin/${PIP_CMD} /usr/local/bin/pip
 
+# chown for directory from skel/ 
+chown -R jupyter:jupyter /usr/home/jupyter
+
 # use "notebook", "jupyterlab", "voila"
 su - jupyter -c "/usr/local/bin/pip install --user jupyterlab"
 su - jupyter -c "openssl req -x509 -nodes -days 365 -newkey rsa:2048  -subj '/C=${H_SSLCOUNTRY}/ST=${H_SSLSTATE}/L=${H_SSLLOCATION}/CN=${H_JUPYTERLAB_FQDN}/emailAddress=${H_SSLMAIL}' -keyout /home/jupyter/mykey.key -out /home/jupyter/mycert.pem"
-su - jupyter -c "mkdir -p /usr/home/jupyter/.jupyter"
-su - jupyter -c "mkdir /usr/home/jupyter/notebooks"
+su - jupyter -c "mkdir -p /usr/home/jupyter/.jupyter /usr/home/jupyter/notebooks"
 mkdir /var/run/jupyter
 chown jupyter /var/run/jupyter
 EOF
-
-sed -e "s:%%IP4_ADDR%%:${ip4_addr}:g" files/jupyter_server_config.py.tmpl > files/jupyter_server_config.py
-jscp files/jupyter ${jname}:/usr/local/etc/rc.d/
-jscp files/jupyter_server_config.py ${jname}:/usr/home/jupyter/.jupyter/
-jscp files/jupyter_server_config.json ${jname}:/usr/home/jupyter/.jupyter/
-rm -f files/jupyter_server_config.py
 
 	# turn off unnecessary services
 	sysrc \
@@ -98,7 +94,7 @@ rm -f files/jupyter_server_config.py
 
 	# postmessage
 	cat <<EOF
-	${jname} url          : http://${_ip}:8888/lab
+	${jname} url          : https://${_ip}:8888/lab
 	${jname} default pass : jupyter
 EOF
 }
