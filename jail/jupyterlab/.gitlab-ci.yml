@@ -1,0 +1,35 @@
+---
+variables:
+  #WORKSPACE: "/home/gitlab-runner/builds"
+
+stages:
+  - up
+  - test
+  - export
+
+jobUp:
+  stage: up
+  tags:
+    - srv-01
+  script:
+     - pwd
+     - sudo cbsd jdestroy jupyterlab || true
+     - sudo cbsd up
+
+jobTest:
+  stage: test
+  script:
+  - sudo tests/login.sh
+  when: on_success
+  tags:
+    - srv-01
+
+jobExport:
+  stage: export
+  script:
+  - pwd
+  - sudo ./mkimg.sh
+  - sudo cbsd jdestroy jupyterlab
+  when: on_success
+  tags:
+    - srv-01
