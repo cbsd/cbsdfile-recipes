@@ -139,6 +139,9 @@ EOF
 sed -i '' -e "s/^port .*/port 0/" -e "s|^# unixsocket .*|unixsocket /var/run/redis/redis.sock|" -e "s|^# unixsocketperm.*|unixsocketperm 770|" /usr/local/etc/redis.conf
 pw usermod www -G redis
 service redis start
+
+	# wait a little before tests
+	sleep 2
 EOF
 
 	# tests
@@ -173,6 +176,9 @@ openssl x509 -req -days 7000 -in server.csr -signkey server.key -out server.crt
 ln -sf /usr/local/etc/nginx/ssl/server.crt /usr/local/etc/nginx/ssl/ssl-bundle.crt
 service nginx start
 EOF
+
+	# wait a little before tests
+	sleep 2
 
 	# tests
 	set -o errexit

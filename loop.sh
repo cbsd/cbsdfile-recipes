@@ -125,6 +125,7 @@ log_file="${LOG_DIR}/${jobname_file}-${emulator}-${jname}-${log_date}.log"
 
 if [ -n "${lock}" ]; then
 	/usr/local/bin/cbsd portsup
+	find /var/log/cbsd-ci-images/ -type f -name \*.log -delete
 	loop
 	exit 0
 else
