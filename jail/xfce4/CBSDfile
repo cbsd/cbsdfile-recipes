@@ -83,6 +83,11 @@ postcreate_xfce4()
 		fi
 	fi
 
+	# don't trust skel permission: https://github.com/cbsd/cbsdfile-recipes/issues/6
+	# always re-set owner/perms for doas/sudo
+	chown -R root:wheel /usr/local/etc/doas.conf /usr/local/etc/sudoers.d/10_xuser
+	chmod 0400 /usr/local/etc/doas.conf /usr/local/etc/sudoers.d/10_xuser
+
 	service dbus restart
 	service xrdp-sesman restart
 	service xrdp restart
@@ -90,7 +95,6 @@ postcreate_xfce4()
 	# wait a little before tests
 	sleep 5
 EOF
-
 
 	## postmessage
 	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
