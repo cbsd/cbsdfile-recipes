@@ -33,7 +33,7 @@ postcreate_rtorrent()
 	forms module=rtorrent inter=0
 
 	# wait a liitle for process before tests
-	sleep 5
+	sleep 8
 
 	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
 

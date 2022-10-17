@@ -30,11 +30,12 @@ FAIL2BAN_DB_PASSWD=$( random_password_gen -l 32 )
 
 jail_iredmail1()
 {
-	ip4_addr="DHCP"
+	ip4_addr="10.0.100.155"
 	host_hostname="${jname}.convectix.com"
 	pkg_bootstrap=1
 	baserw=1
 	mount_src=1		# for lsof
+	vnet=1			# req for MySQL Grant
 	pkglist="shells/bash"
 }
 
@@ -54,8 +55,11 @@ postcreate_iredmail1()
 
 	jexec /bin/sh <<JEXEC
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
-service cron onestop
-service syslogd onestop
+#service cron onestop
+#service syslogd onestop
+/etc/rc.d/netif restart
+/sbin/route add default 10.0.100.1
+
 
 [ -d /root/iRedMail-${IREDMAIL_VER} ] && exit 0
 cd /root
