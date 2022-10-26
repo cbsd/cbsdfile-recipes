@@ -32,6 +32,8 @@ postcreate_rtorrent()
 
 	forms module=rtorrent inter=0
 
+	jexec service rtorrent start
+
 	# wait a liitle for process before tests
 	sleep 8
 
