@@ -1,0 +1,50 @@
+jail_clickhouse()
+{
+	pkglist="shells/bash"
+	ip4_addr="DHCP"
+
+	host_hostname="${jname}.my.domain"
+	pkg_bootstrap=1
+	runapap=1
+}
+
+postcreate_clickhouse()
+{
+	local _ip
+	set +o xtrace
+
+	# forward in 9000/tcp to jail?
+	#expose mode=add in=9000 out=9000
+
+	# turn off unnecessary services
+	sysrc \
+		syslogd_flags="-ss" \
+		syslogd_enable="YES" \
+		cron_enable="NO" \
+		sendmail_enable="NO" \
+		sendmail_submit_enable="NO"\
+		sendmail_outbound_enable="NO" \
+		sendmail_msp_queue_enable="NO" \
+		clickhouse_enable="YES"
+
+	jexec <<EOF
+	export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+
+	pw useradd clickhouse -s /usr/sbin/nologin -d /var/db/clickhouse -c "ClickHouse Daemon" -u 800
+
+	mkdir -m 0700 /var/db/clickhouse /var/run/clickhouse
+	chown clickhouse:clickhouse /var/db/clickhouse /var/run/clickhouse
+
+	fetch -o /usr/local/bin/clickhouse https://dl.bsdstore.ru/bin/${arch}/${arch}/${ver}/clickhouse
+	chmod a+x /usr/local/bin/clickhouse
+	ln -sf /usr/local/bin/clickhouse /usr/local/bin/clickhouse-server
+	ln -sf /usr/local/bin/clickhouse /usr/local/bin/clickhouse-client
+	service clickhouse start
+EOF
+
+	# wait a little before tests
+	sleep 10
+
+	## postmessage
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+}

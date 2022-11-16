@@ -1,0 +1,11 @@
+# from source
+# pkg_deps_for_build="llvm15 dialog4ports nasm pkgconf automake autoconf gmake libtool git devel/ninja cmake ccache"
+# export CC=clang15
+# export CXX=clang++15
+#
+# git clone --recursive https://github.com/ClickHouse/ClickHouse.git
+# cd ClickHouse
+# mkdir build && cd build
+# cmake ..
+# (or): cmake ../ClickHouse
+# ninja
