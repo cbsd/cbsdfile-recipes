@@ -1,6 +1,6 @@
 # Example of using the marketplace of CBSD jail images
 
-jail_xfce4()
+jail_clickhouse()
 {
 	from="https://dl.bsdstore.ru/img/`uname -m`/`uname -m`/`sysctl -n kern.osrelease | cut -d - -f 1`/${jname}/${jname}.img"
 	ip4_addr="DHCP"
