@@ -1,2 +1,8 @@
 ClickHouse is an open-source column-oriented database management \
 system that allows generating analytical data reports in real time. \
+\
+This image/build for CBSD project, it's not official FreeBSD Clickhouse build. \
+\
+If you are looking for an official Clickhouse FreeBSD build, please use link: \
+\
+https://clickhouse.com/docs/en/install/#from-binaries-non-linux \
