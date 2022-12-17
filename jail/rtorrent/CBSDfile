@@ -33,6 +33,8 @@ postcreate_rtorrent()
 	forms module=rtorrent inter=0
 
 	# may dup
+	jexec service rtorrent stop || true
+	sleep 2
 	jexec service rtorrent start || true
 
 	# wait a liitle for process before tests
