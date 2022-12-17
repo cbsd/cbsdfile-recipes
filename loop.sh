@@ -1,7 +1,7 @@
 #!/bin/sh
-# ./loop.sh -e jail -j ALL -v 14.0
+# ./loop.sh -e jail -j ALL -v `sysctl -n kern.osrelease | cut -d - -f 1`
 # -j can be specific jail in jail directory, e.g:
-# ./loop.sh -e jail -j pgadmin4 -v 14.0
+# ./loop.sh -e jail -j pgadmin4 -v `sysctl -n kern.osrelease | cut -d - -f 1`
 MYDIR=$( dirname `realpath $0` )
 
 set -e

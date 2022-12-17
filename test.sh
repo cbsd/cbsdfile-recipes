@@ -1,5 +1,5 @@
 #!/bin/sh
-# ./test.sh -e jail -j pgadmin4 -v 14.0
+# ./test.sh -e jail -j pgadmin4 -v `sysctl -n kern.osrelease | cut -d - -f 1`
 MYDIR=$( dirname `realpath $0` )
 
 set -e
