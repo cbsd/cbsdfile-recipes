@@ -32,6 +32,9 @@ postcreate_rtorrent()
 
 	forms module=rtorrent inter=0
 
+	echo "RRR"
+
+	echo "jexec service rtorrent start"
 	jexec service rtorrent start
 
 	# wait a liitle for process before tests
