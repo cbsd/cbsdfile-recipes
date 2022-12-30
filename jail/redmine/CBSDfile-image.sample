@@ -32,13 +32,8 @@ postcreate_redmine()
 
 	# show postmessage
 	cat <<EOF
-	${jname} URL          : http://${_ip}
-
-	Default settings for 'Database Setup' action:
-
-	  Database Server: 127.0.0.1
-	  Login: admin
-	  Password: admin
-
+	UI available via          : http://${_ip}:3000
+	Login: admin
+	Password: admin
 EOF
 }

@@ -49,7 +49,7 @@ EOF
 	# postmessage
 	${CAT_CMD} <<EOF
 
-	UI available via: http://${ip4_addr}
+	UI available via: http://${ip4_addr}:3000
 
 	Default settings:
 
