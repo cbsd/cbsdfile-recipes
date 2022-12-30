@@ -1,0 +1,5 @@
+
+ For reconfigure redmine, please run:
+
+   cbsd forms module=redmine jname=$jname
+

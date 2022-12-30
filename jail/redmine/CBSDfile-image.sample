@@ -1,0 +1,44 @@
+# Example of using the marketplace of CBSD jail images
+jail_redmine()
+{
+	forms="redmine"
+
+	# Use remote image. You can comment this line to build the image locally.
+	from="https://dl.bsdstore.ru/img/`uname -m`/`uname -m`/`sysctl -n kern.osrelease | cut -d - -f 1`/${jname}/${jname}.img"
+
+	# to overwrite default settings, see 'cbsd forms module=redmine vars' for full list
+	# use 'cbsd forms' to re-configure settings in runtime.
+	# export H_TIMEZONE=UTC H_MAX_CONNECTIONS=100 H_REDMINE_PORT=8080 ...
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	ver="native"
+	interface="auto"
+	runasap=1
+	pkg_bootstrap=0
+}
+
+# Ensure we have forms-redmine module
+preup_redmine()
+{
+	# forms-based module, install it first
+	module mode=install forms-redmine
+}
+
+postcreate_redmine()
+{
+	local _ip
+
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+
+	# show postmessage
+	cat <<EOF
+	${jname} URL          : http://${_ip}
+
+	Default settings for 'Database Setup' action:
+
+	  Database Server: 127.0.0.1
+	  Login: admin
+	  Password: admin
+
+EOF
+}

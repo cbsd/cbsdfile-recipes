@@ -1,0 +1,61 @@
+# Install redmine jail
+
+quiet=0
+
+jail_redmine()
+{
+	# use 'cbsd forms module=redmine' module
+	forms="redmine"
+	# to overwrite default settings:
+	# export H_TIMEZONE H="Europe/Moscow" \
+	# H_MAX_CONNECTIONS=100 \
+	# H_REDMINE_PORT=8080
+	# check all vars: cbsd forms module=redmine vars
+
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	ver="native"
+	interface="auto"
+	pkg_bootstrap=1
+	runasap=1
+}
+
+preup_redmine()
+{
+	# forms-based module, install it first
+	module mode=install forms-redmine
+}
+
+postcreate_redmine()
+{
+	local _ip
+
+	# turn off unnecessary services
+	sysrc \
+		syslogd_flags="-ss -c" \
+		syslogd_enable="NO" \
+		cron_enable="NO" \
+		sendmail_enable="NO" \
+		sendmail_submit_enable="NO" \
+		sendmail_outbound_enable="NO" \
+		sendmail_msp_queue_enable="NO" \
+		clear_tmp_enable="YES" \
+
+	jexec <<EOF
+# Ruby thin server may start slowly, waiting for 5sec before tests
+sleep 5
+EOF
+
+	# postmessage
+	${CAT_CMD} <<EOF
+
+	UI available via: http://${ip4_addr}
+
+	Default settings:
+
+	  Login: admin
+	  Password: admin
+
+EOF
+
+}
