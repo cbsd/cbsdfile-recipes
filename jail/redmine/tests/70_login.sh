@@ -4,6 +4,8 @@ export NOCOLOR=1
 
 [ -z "${jname}" ] && jname="redmine"
 
+redmine_http_port="3000"
+
 CURL_CMD=$( which curl 2>/dev/null )
 
 if [ -z "${CURL_CMD}" ]; then
