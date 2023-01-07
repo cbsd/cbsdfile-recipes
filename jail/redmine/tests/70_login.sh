@@ -13,8 +13,8 @@ if [ -z "${CURL_CMD}" ]; then
 	exit 1
 fi
 
-# <form action="index.php?module=LanguagesManager&amp;action=saveLanguage" method="post">
-GREP_VAL=""form.*action.*post""
+# <ul><li><a class="login" href="/login">Sign in</a></li><li><a class="register" href="/account/register">Register</a></li></ul>    </div>
+GREP_VAL=" href=\"/login\""
 
 data=$( cbsd jget mode=quiet jname=${jname} data 2>/dev/null )
 . ${data}/etc/rc.conf
