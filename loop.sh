@@ -125,10 +125,17 @@ log_file="${LOG_DIR}/${jobname_file}-${emulator}-${jname}-${log_date}.log"
 
 if [ -n "${lock}" ]; then
 	/usr/local/bin/cbsd portsup
+
+	if [ -d "${MYDIR}/extra-ports" ]; then
+		find ${MYDIR}/extra-ports/ -depth 2 -maxdepth 2 -type d | sed "s:${MYDIR}/extra-ports/::g" | tr '/' ' ' | while read _cat _port; do
+			echo "overwrite ${_cat}/${_port} extra ports"
+			[ -d /usr/ports/${_cat}/${_port} ] && rm -rf /usr/ports/${_cat}/${_port}
+			cp -a ${MYDIR}/extra-ports/${_cat}/${_port} /usr/ports/${_cat}
+		done
+	fi
 	find /var/log/cbsd-ci-images/ -type f -name \*.log -delete
 	/usr/local/bin/cbsd module mode=upgrade puppet
 	loop
-	exit 0
 else
 	# recursive execite via lockf wrapper
 	[ ! -d "${LOG_DIR}" ] && mkdir -p ${LOG_DIR}
