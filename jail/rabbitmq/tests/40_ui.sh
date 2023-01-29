@@ -11,7 +11,7 @@ if [ -z "${CURL_CMD}" ]; then
 fi
 
 ip4_addr=$( cbsd jget jname=${jname} mode=quiet ip4_addr 2>/dev/null )
-GREP_VAL="start_app_login"
+GREP_VAL="oauth_initialize_if_required"
 
 case "${ip4_addr}" in
 	*\.*\.*\.*)
