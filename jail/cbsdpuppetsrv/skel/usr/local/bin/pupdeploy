@@ -1,0 +1,75 @@
+#!/bin/sh
+export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+
+MY_FQDN=$( facter fqdn )
+
+SUDO_CMD=$( which sudo 2>/dev/null )
+RSYNC_CMD=$( which rsync 2>/dev/null )
+
+if [ -z "${SUDO_CMD}" ]; then
+	echo "no such sudo executable"
+	exit 1
+fi
+if [ -z "${RSYNC_CMD}" ]; then
+	echo "no such rsync executable"
+	exit 1
+fi
+
+[ -z "${1}" ] && exit 1
+DIR=$( realpath "${1}" )
+echo "work user: `whoami`"
+PUPPET_VERSION=$( ${SUDO_CMD} puppetserver --version )
+ret=$?
+if [ ${ret} -ne 0 ]; then
+	echo "no ${SUDO_CMD} privileges for puppetserver"
+	exit 1
+fi
+
+/usr/local/bin/rsync --exclude .git ${DIR}/ -avz /usr/local/etc/puppet/code/environments/production/data/
+
+if [ ! -d /usr/local/etc/puppet/code/environments/production/data/nodes ]; then
+	echo "no such node entries/dir"
+	exit 0
+fi
+
+FILES=$( find /usr/local/etc/puppet/code/environments/production/data/nodes/ -type f -depth 1 -exec basename {} \; )
+NODES=
+
+for i in ${FILES}; do
+	fqdn=$( echo ${i} | sed -Ees:"\.yaml":"":g -es:"\.yml":"":g )
+	[ -z "${fqdn}" ] && continue
+	if [ -z "${NODES}" ]; then
+		NODES="${i}"
+	else
+		NODES="${NODES} ${i}"
+	fi
+done
+
+for i in ${NODES}; do
+	ret=$?
+done
+
+ALL_PUPPET_NODES=$( ${SUDO_CMD} puppetserver ca list --all | grep SHA256 | awk '{printf $1" "}' )
+
+echo "Full nodes list: ${ALL_PUPPET_NODES}"
+
+# check when exist in puppet but not exist in nodes
+for i in ${ALL_PUPPET_NODES}; do
+
+	# never unsign for myself
+	[ "${i}" = "${MY_FQDN}" ] && continue
+
+	exist=0
+
+	for j in ${NODES}; do
+		echo "check for [${j}][${i}]"
+		[ "${j}" = "${i}" ] && exist=1 && break
+	done
+
+	[ ${exist} -eq 1 ] && continue
+
+	echo "Auto-remove nodes from signlist: ${i}"
+	${SUDO_CMD} puppetserver ca clean --certname=${i}  > /dev/null 2>&1
+done
+
+exit 0

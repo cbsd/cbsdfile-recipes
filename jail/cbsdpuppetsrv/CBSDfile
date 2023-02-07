@@ -1,0 +1,63 @@
+quiet=0
+
+jail_cbsdpuppetsrv()
+{
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	pkg_bootstrap=1
+	pkglist="puppet7 puppetserver7 rubygem-hiera rubygem-hiera-eyaml rubygem-hiera-file git gitlab-runner sudo rsync"
+	fstablocal="fstab.local"
+	sysrc="syslogd_enable=NO cron_enable=NO sendmail_enable=NO sendmail_submit_enable=NO sendmail_outbound_enable=NO sendmail_msp_queue_enable=NO"
+}
+
+postcreate_cbsdpuppetsrv()
+{
+	jexec <<EOF
+set -o xtrace
+puppetserver gem install hiera-eyaml eyaml
+chown puppet /var/puppet/server/data/puppetserver
+echo '127.0.0.1 puppet' >> /etc/hosts
+rm -rf /usr/local/etc/puppet
+git clone https://github.com/cbsd/puppet-empty.git /usr/local/etc/puppet
+rm -rf /usr/local/etc/puppet/.git
+service puppetserver enable
+service puppetserver start
+ln -sf /usr/local/etc/puppet/modules /usr/local/etc/puppet/code/environments/modules
+
+mkdir -p /var/tmp/gitlab_runner/.gitlab-runner
+chown -R gitlab-runner:gitlab-runner /var/tmp/gitlab_runner /usr/local/etc/puppet/code/environments/production/data
+service gitlab_runner enable
+service gitlab_runner start
+
+# wait for puppetserver ready
+echo "wait for puppetserver ready: 60 sec max"
+sleep 60
+puppet agent -t
+set +o xtrace
+EOF
+
+	cat <<EOF
+
+1) Please register gitlab runner labeled as 'cbsdpuppet' + 'shell' executor via:
+
+cbsd jexec jname=${jname} service gitlab_runner register
+
+2) Please create empty project in GitLab, e.g. sre (group) + jails:
+
+sre/jails
+
+3) Add ACCOUNT as 'maintainer' (for push into 'main') role to sre/jails
+
+4) Get ID for sre/jails (e.g. '26'), GET TOKEN (e.g. 'XXXXXXXXXX' ) for ACCOUNT
+
+5) git clone https://oauth2:XXXXXXXXXXXXXXXX@GITSERVER/sre/jails.git /tmp/jails/
+
+git clone https://github.com/cbsd/puppet-empty.git /tmp/empty
+rsync -avz /tmp/empty/code/environments/production/data/ /tmp/jails/
+cd /tmp/jails
+git add . -A
+git commit -am 'wip'
+git push
+
+EOF
+}

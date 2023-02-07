@@ -1,0 +1,2 @@
+Cmnd_Alias	PUPPETSERVER_CMD = /usr/local/bin/puppetserver
+gitlab-runner	ALL=(ALL) NOPASSWD: PUPPETSERVER_CMD
