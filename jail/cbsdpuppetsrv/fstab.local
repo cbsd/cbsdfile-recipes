@@ -1,1 +1,2 @@
-proc    /proc           procfs          rw      0       0
+proc						/proc				procfs	rw	0	0
+/usr/local/cbsd/modules/puppet.d/modules/public	/usr/local/etc/puppet/modules	nullfs	ro	0	0

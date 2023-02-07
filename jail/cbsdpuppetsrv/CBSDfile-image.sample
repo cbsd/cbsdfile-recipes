@@ -1,5 +1,22 @@
 # Example of using the marketplace of CBSD jail images
 
+preup()
+{
+	# check for puppet.d module existance
+	if [ ! -d /usr/local/cbsd/modules/puppet.d/modules/public/stdlib ]; then
+		${ECHO} "${W1_COLOR}preup function failed:${N0_COLOR}"
+		echo
+		${ECHO} "${N1_COLOR}  This environment depends on the presence of the ${N2_COLOR}puppet${N1_COLOR} module.${N0_COLOR}"
+		${ECHO} "${N1_COLOR}  Please install and activate it:${N0_COLOR}"
+		echo
+		${ECHO} "${N2_COLOR}    cbsd module mode=install puppet${N0_COLOR}"
+		${ECHO} "${N2_COLOR}    echo 'puppet.d' >> ~cbsd/etc/modules.conf${N0_COLOR}"
+		${ECHO} "${N2_COLOR}    cbsd initenv${N0_COLOR}"
+		echo
+		exit 1
+	fi
+}
+
 jail_cbsdpuppetsrv()
 {
 	from="https://dl.bsdstore.ru/img/`uname -m`/`uname -m`/`sysctl -n kern.osrelease | cut -d - -f 1`/${jname}/${jname}.img"
