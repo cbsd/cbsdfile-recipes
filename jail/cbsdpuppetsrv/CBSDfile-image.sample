@@ -1,0 +1,30 @@
+# Example of using the marketplace of CBSD jail images
+
+jail_cbsdpuppetsrv()
+{
+	from="https://dl.bsdstore.ru/img/`uname -m`/`uname -m`/`sysctl -n kern.osrelease | cut -d - -f 1`/${jname}/${jname}.img"
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	ver="native"
+	interface="auto"
+	runasap=1
+	pkg_bootstrap=0
+}
+
+postcreate_cbsdpuppetsrv()
+{
+	local _ip
+
+	## postmessage
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+
+	# show postmessage
+	cat <<EOF
+
+	Puppetserver IP: ${_ip}
+
+	Please follow the instruction how to setup CI/IaC 
+	for virtual environment.
+
+EOF
+}
