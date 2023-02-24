@@ -6,7 +6,7 @@ PY_VERSION="3.9"												# use python ${PY_VERSION} by default, e.g: 3.9
 PYTHON_CMD="python${PY_VERSION}"										# default python interpreter: python${PY_VERSION}, e.g: python3.9
 PIP_CMD="pip-${PY_VERSION}"											# default pip cmd: pip-${PY_VERSION}, e.g: pip-3.9
 PY_PREFIX=$( echo ${PY_VERSION} | tr -d "." )									# py${PY_PREFIX}-<packages>, e.g: py39-openssl
-PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v6.18/pip/pgadmin4-6.18-py3-none-any.whl"	# pip whl url/source
+PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v6.20/pip/pgadmin4-6.20-py3-none-any.whl"	# pip whl url/source
 
 # pgadmin4 default credential
 PGADMIN_SETUP_EMAIL="root@example.org"
