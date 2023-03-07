@@ -31,7 +31,7 @@ jail_jupyterlab()
 
 	# pyXX-wheel not direct deps, to mute
 	# Using legacy 'setup.py install' for XXX, since package 'wheel' is not installed.
-	pkglist="python${PYTHON_PREFIX} py${PY_PREFIX}-wheel py${PY_PREFIX}-pip py${PY_PREFIX}-sqlite3 py${PY_PREFIX}-pyzmq"
+	pkglist="python${PYTHON_PREFIX} py${PY_PREFIX}-wheel py${PY_PREFIX}-pip py${PY_PREFIX}-sqlite3 py${PY_PREFIX}-pyzmq py${PY_PREFIX}-py py${PY_PREFIX}-psutil lang/rust"
 
 	# add custom user, e.g.: 'jupyter'
 	user_add="jupyter"
