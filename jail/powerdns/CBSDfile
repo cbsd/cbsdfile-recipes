@@ -16,6 +16,8 @@ jail_powerdns()
 	#  H_POWERDNS_ZONES_NAME1="example.org" \
 	#  H_POWERDNS_ZONES_MANAGE_RECORDS1="true"
 
+	pkglist="databases/mysql80-server"
+
 	ip4_addr="DHCP"
 	host_hostname="${jname}.my.domain"
 	ver="native"
