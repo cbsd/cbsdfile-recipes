@@ -171,13 +171,13 @@ $config['footer_message']         = "";                     // Custom message in
  * The default behaviour is to use the system wide default php version symlinked to php in PHP_BINDIR (/usr/bin/php).
  * If multiple php versions are present; overide selection with $php_cli_binary.
  */
-// $php_cli_binary = '/usr/bin/php7.1';
 $php_cli_binary = '/usr/local/bin/php';
+
 /**
  * Path to mysqldump binary
  *
  * default: '/usr/bin/mysqldump'
  */
-// $mysqldump_cli_binary = '/usr/bin/mysqldump';
 $mysqldump_cli_binary = '/usr/local/bin/mysqldump';
-$allow_untested_php_versions=true;
+
+$allow_untested_php_versions = true;

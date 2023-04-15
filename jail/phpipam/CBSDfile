@@ -64,26 +64,33 @@ service mysql-server restart || true
 # stabilize service
 sleep 2
 
-if [ ! -r /root/.mysql_secret ]; then
-	echo "no /root/.mysql_secret"
-	exit 1
-fi
+#if [ ! -r /root/.mysql_secret ]; then
+#	echo "no /root/.mysql_secret"
+#	exit 1
+#fi
 
 # reset pass
 # default generatedpassword may start with a comment symbol(#),
 # exclude by password phrase
-oldpw=\`grep -v "Password set" /root/.mysql_secret\`
-#mysql -u root -p\`grep -v ^# /root/.mysql_secret | tr -d "\r\n"\` --connect-expired-password <<SEOF
-mysql -u root -p\${oldpw} --connect-expired-password <<SEOF
-SET PASSWORD = PASSWORD('${mysql_root_password}');
+#oldpw=\`grep -v "Password set" /root/.mysql_secret\`
+#mysql -u root -p\${oldpw} --connect-expired-password <<SEOF
+#SET PASSWORD = PASSWORD('${mysql_root_password}');
+mysql -u root --skip-password <<SEOF
+ALTER USER 'root'@'localhost' IDENTIFIED BY '${mysql_root_password}';
 FLUSH PRIVILEGES;
 SEOF
 
 echo '${mysql_root_password}' > /root/.mysql_secret
 
+# < 8.0
+#GRANT ALL ON phpipam.* TO phpipam@'%' IDENTIFIED BY '${mysql_phpipam_password}';
+
+
 mysql -u root -p'${mysql_root_password}' <<SEOF
 CREATE DATABASE phpipam;
-GRANT ALL ON phpipam.* TO phpipam@'%' IDENTIFIED BY '${mysql_phpipam_password}';
+
+CREATE USER 'phpipam'@'%' IDENTIFIED BY '${mysql_phpipam_password}';
+GRANT ALL PRIVILEGES ON phpipam.* TO 'phpipam'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 SEOF
 

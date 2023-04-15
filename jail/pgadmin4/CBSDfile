@@ -1,12 +1,12 @@
 # Install PGADMIN4 jail
 # todo: switch to rc.d instead of rc.local
 # some defaults:
-PG_VER="14"													# install postgres${PG_VER}-client
+PG_VER="13"													# install postgres${PG_VER}-client
 PY_VERSION="3.9"												# use python ${PY_VERSION} by default, e.g: 3.9
 PYTHON_CMD="python${PY_VERSION}"										# default python interpreter: python${PY_VERSION}, e.g: python3.9
 PIP_CMD="pip-${PY_VERSION}"											# default pip cmd: pip-${PY_VERSION}, e.g: pip-3.9
 PY_PREFIX=$( echo ${PY_VERSION} | tr -d "." )									# py${PY_PREFIX}-<packages>, e.g: py39-openssl
-PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v6.20/pip/pgadmin4-6.20-py3-none-any.whl"	# pip whl url/source
+PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v7.0/pip/pgadmin4-7.0-py3-none-any.whl"	# pip whl url/source
 
 # pgadmin4 default credential
 PGADMIN_SETUP_EMAIL="root@example.org"
@@ -23,10 +23,27 @@ jail_pgadmin4()
 
 	# pyXX-wheel not direct deps, to mute
 	# Using legacy 'setup.py install' for XXX, since package 'wheel' is not installed.
+#	pkglist="postgresql${PG_VER}-client \
+#		py${PY_PREFIX}-wheel \
+#		py${PY_PREFIX}-virtualenv \
+#		py${PY_PREFIX}-pip \
+#		rust"
+
 	pkglist="postgresql${PG_VER}-client \
 		py${PY_PREFIX}-wheel \
 		py${PY_PREFIX}-virtualenv \
 		py${PY_PREFIX}-pip \
+		py${PY_PREFIX}-psutil \
+		py${PY_PREFIX}-Flask \
+		py${PY_PREFIX}-Flask-Login \
+		py${PY_PREFIX}-Flask-Mail \
+		py${PY_PREFIX}-flask-socketio \
+		py${PY_PREFIX}-flask-babel \
+		py${PY_PREFIX}-flask-security \
+		py${PY_PREFIX}-flask-sqlalchemy \
+		py${PY_PREFIX}-dateutil \
+		py${PY_PREFIX}-email-validator \
+		py${PY_PREFIX}-flask-migrate \
 		py${PY_PREFIX}-openssl \
 		py${PY_PREFIX}-cryptography \
 		py${PY_PREFIX}-pyasn1 \
@@ -35,6 +52,8 @@ jail_pgadmin4()
 		py${PY_PREFIX}-sqlite3 \
 		py${PY_PREFIX}-pillow \
 		py${PY_PREFIX}-dnspython \
+		py${PY_PREFIX}-bcrypt \
+		py${PY_PREFIX}-psycopg \
 		rust"
 
 	# rust to build cryptography module
@@ -62,8 +81,65 @@ fi
 
 ln -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python
 ln -sf /usr/local/bin/${PIP_CMD} /usr/local/bin/pip
+# https://github.com/pgadmin-org/pgadmin4/blob/master/requirements.txt
+cat > /tmp/req.txt <<XEOF
+Flask==2.2.*
+Flask-Gravatar==0.*
+Flask-Login==0.*
+Flask-Mail==0.*
+Flask-Migrate==4.*
+greenlet==1.1.2;  python_version <= '3.10'
+Flask-SQLAlchemy==3.0.*
+Flask-WTF==1.1.1
+Flask-Compress==1.*
+Flask-Paranoid==0.*
+Flask-Babel==3.0.*
+Flask-Security-Too==5.1.*
+Flask-SocketIO==5.3.*
+WTForms==3.0.*
+passlib==1.*
+pytz==2022.*
+speaklater3==1.*
+sqlparse==0.*
+psutil==5.9.*
+psycopg[c]==3.1.*
+python-dateutil==2.*
+SQLAlchemy==2.*
+bcrypt==4.0.*
+cryptography==40.0.*
+sshtunnel==0.*
+ldap3==2.*
+gssapi==1.8.*
+eventlet==0.33.3
+httpagentparser==1.9.*
+user-agents==2.2.0
+pywinpty==2.0.*; sys_platform=="win32"
+Authlib==1.2.*
+requests==2.28.*
+pyotp==2.*
+qrcode==7.*
+Pillow==9.*
+boto3==1.26.*
+botocore==1.29.*
+urllib3==1.26.*
+azure-mgmt-rdbms==10.1.0
+azure-mgmt-resource==23.0.0
+azure-mgmt-subscription==3.1.1
+azure-identity==1.12.0
+google-api-python-client==2.*
+google-auth-oauthlib==1.0.0
+XEOF
 
-/usr/local/bin/pip install ${PGADMIN4_WHL_URL}
+
+/usr/local/bin/pip install -r /tmp/req.txt || true
+/usr/local/bin/pip install eventlet
+/usr/local/bin/pip install flask_paranoid
+# get latest
+pkg remove -f -y py${PY_PREFIX}-openssl \
+/usr/local/bin/pip install pyopenssl
+/usr/local/bin/pip install -r /tmp/req.txt || true
+/usr/local/bin/pip install ${PGADMIN4_WHL_URL} || true
+/usr/local/bin/pip install --no-dependencies ${PGADMIN4_WHL_URL} 
 sed 's:127.0.0.1:0.0.0.0:g' /usr/local/lib/python${PY_VERSION}/site-packages/pgadmin4/config.py > /usr/local/lib/python${PY_VERSION}/site-packages/pgadmin4/config_local.py
 
 pkg remove -y rust
