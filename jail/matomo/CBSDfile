@@ -45,10 +45,8 @@ postcreate_matomo()
 		sendmail_msp_queue_enable="NO" \
 		clear_tmp_enable="YES" \
 
-	jexec <<EOF
-# PHP_FPM may start slowly, waiting for 5sec before tests
-sleep 5
-EOF
+	echo "wait 5sec for service start.."
+	sleep 5
 
 	# postmessage
 	${CAT_CMD} <<EOF

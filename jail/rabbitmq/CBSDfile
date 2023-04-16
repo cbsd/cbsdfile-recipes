@@ -43,6 +43,9 @@ postcreate_rabbitmq()
 		clear_tmp_enable="YES" \
 		rabbitmq_enable="YES"
 
+	echo "wait 5sec for service start.."
+	sleep 5
+
 	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
 
 	# show postmessage
