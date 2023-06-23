@@ -6,7 +6,7 @@ PY_VERSION="3.9"												# use python ${PY_VERSION} by default, e.g: 3.9
 PYTHON_CMD="python${PY_VERSION}"										# default python interpreter: python${PY_VERSION}, e.g: python3.9
 PIP_CMD="pip-${PY_VERSION}"											# default pip cmd: pip-${PY_VERSION}, e.g: pip-3.9
 PY_PREFIX=$( echo ${PY_VERSION} | tr -d "." )									# py${PY_PREFIX}-<packages>, e.g: py39-openssl
-PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v7.0/pip/pgadmin4-7.0-py3-none-any.whl"	# pip whl url/source
+PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v7.3/pip/pgadmin4-7.3-py3-none-any.whl"	# pip whl url/source
 
 # pgadmin4 default credential
 PGADMIN_SETUP_EMAIL="root@example.org"
@@ -54,6 +54,7 @@ jail_pgadmin4()
 		py${PY_PREFIX}-dnspython \
 		py${PY_PREFIX}-bcrypt \
 		py${PY_PREFIX}-psycopg \
+		py${PY_PREFIX}-keyring \
 		rust"
 
 	# rust to build cryptography module
@@ -142,13 +143,14 @@ pkg remove -f -y py${PY_PREFIX}-openssl \
 /usr/local/bin/pip install --no-dependencies ${PGADMIN4_WHL_URL} 
 sed 's:127.0.0.1:0.0.0.0:g' /usr/local/lib/python${PY_VERSION}/site-packages/pgadmin4/config.py > /usr/local/lib/python${PY_VERSION}/site-packages/pgadmin4/config_local.py
 
-pkg remove -y rust
+pkg remove -y rust || true
 mkdir -p /var/lib/pgadmin
 
 set +o errexit
 [ ! -d /var/lib/pgadmin ] && mkdir -p /var/lib/pgadmin
 [ -r /var/lib/pgadmin/pgadmin4.db ] && rm -f /var/lib/pgadmin/pgadmin4.db
 [ ! -d /usr/local/etc/rc.d ] && mkdir -p /usr/local/etc/rc.d
+exit 0
 EOF
 
 	sed "s:%%PY_VERSION%%:${PY_VERSION}:g" files/pgadmin4.tpl > files/pgadmin4
@@ -167,7 +169,6 @@ EOF
 		sendmail_outbound_enable="NO" \
 		sendmail_msp_queue_enable="NO" \
 		pgadmin4_enable="YES"
-
 
 	service mode=action pgadmin4 start || true
 	echo "waiting for service..."

@@ -165,24 +165,23 @@ EOF
 
 configure_postgresql_cred()
 {
-	jexec <<EOF
-# Connect as superuser to gitlab db and enable pg_trgm extension if not installed
-psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
-psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS btree_gist;"
-EOF
-
-
-	[ ${IS_UPGRADE} -eq 1 ] && return 0
-
-	# for new setup
-	jexec <<EOF
+	if [ ${IS_UPGRADE} -eq 0 ]; then
+		# for new setup
+		jexec <<EOF
 # create user git
 psql -d template1 -U postgres -c "CREATE USER git WITH PASSWORD '${DB_PASSWORD}'"
 psql -d template1 -U postgres -c "ALTER USER git WITH SUPERUSER;"
 psql -d template1 -U postgres -c "ALTER USER git WITH CREATEDB;"
+EOF
+	fi
 
+	jexec <<EOF
 # Create the GitLab production database & grant all privileges on database
 psql -d template1 -U postgres -c "CREATE DATABASE gitlabhq_production OWNER git;"
+
+# Connect as superuser to gitlab db and enable pg_trgm extension if not installed
+psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS btree_gist;"
 EOF
 }
 
@@ -429,6 +428,7 @@ EOF
 	set +o errexit
 	set -o xtrace
 
+
 	configure_redis
 
 	# tests
@@ -453,7 +453,6 @@ EOF
 	set -o xtrace
 
 	configure_ssh
-
 
 #	# Create .gitlab_shell_secret symlink
 #	jexec ln -s /usr/local/www/gitlab-ce/.gitlab_shell_secret /usr/local/share/gitlab-shell/.gitlab_shell_secret

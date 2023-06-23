@@ -1,6 +1,6 @@
 # Install jupyterlab jail
 # some defaults:
-#   hint: password for skel/usr/home/jupyter/.jupyter/jupyter_server_config.json can be extracted with:
+#   hint: password for skel//home/jupyter/.jupyter/jupyter_server_config.json can be extracted with:
 #   python3 -c "from notebook.auth import passwd; print(passwd('jupyter'))"
 #
 PY_VERSION="3.9"												# use python ${PY_VERSION} by default, e.g: 3.9
@@ -67,12 +67,12 @@ ln -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python
 ln -sf /usr/local/bin/${PIP_CMD} /usr/local/bin/pip
 
 # chown for directory from skel/ 
-chown -R jupyter:jupyter /usr/home/jupyter
+chown -R jupyter:jupyter //home/jupyter
 
 # use "notebook", "jupyterlab", "voila"
 su - jupyter -c "/usr/local/bin/pip install --user jupyterlab"
 su - jupyter -c "openssl req -x509 -nodes -days 365 -newkey rsa:2048  -subj '/C=${H_SSLCOUNTRY}/ST=${H_SSLSTATE}/L=${H_SSLLOCATION}/CN=${H_JUPYTERLAB_FQDN}/emailAddress=${H_SSLMAIL}' -keyout /home/jupyter/mykey.key -out /home/jupyter/mycert.pem"
-su - jupyter -c "mkdir -p /usr/home/jupyter/.jupyter /usr/home/jupyter/notebooks"
+su - jupyter -c "mkdir -p //home/jupyter/.jupyter //home/jupyter/notebooks"
 mkdir /var/run/jupyter
 chown jupyter /var/run/jupyter
 EOF
