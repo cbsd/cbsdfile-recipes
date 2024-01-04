@@ -2,11 +2,11 @@
 
 # Default Postgresql version ( e.g.: /usr/ports/databases/postgresql${PG_VER}-server )
 # see nextcloud_pkg_list file
-# grep ^PGSQL bsd.default-versions.mk
-PG_VER=13
+# grep ^PGSQL_DEFAULT /usr/ports/Mk/bsd.default-versions.mk
+PG_VER=15
 # Default PHP version ( e.g.: /usr/ports/lang/php${PHP_VER} )
 # see nextcloud_pkg_list file
-PHP_VER="81"
+PHP_VER="83"
 # to overwrite NEXTCLOUD FQDN servername from env/args:
 #  env H_NEXTCLOUD_FQDN=my.example.ru cbsd up
 [ -z "${H_NEXTCLOUD_FQDN}" ] && H_NEXTCLOUD_FQDN="nextcloud.mydomain.com"
