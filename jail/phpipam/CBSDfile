@@ -4,7 +4,7 @@
 
 quiet=0
 
-PHP_VER="php81"
+PHP_VER="php83"
 
 # no $PHP_VER-phpipam, why?
 
