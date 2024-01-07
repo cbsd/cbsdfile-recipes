@@ -10,9 +10,8 @@
 ### Postgresql settings
 # GitLab root password:
 # Default Postgresql version
-# FreeBSD defaults: 'grep ^PGSQL_DEFAULT bsd.default-versions.mk'
-[ -z "${GITLAB_PG_VER}" ] && GITLAB_PG_VER="13"
-
+# FreeBSD defaults: 'grep ^PGSQL_DEFAULT /usr/ports/Mk/bsd.default-versions.mk'
+[ -z "${GITLAB_PG_VER}" ] && GITLAB_PG_VER="15"
 
 ### Nginx settings
 # Default nginx port for http:// in jail:
