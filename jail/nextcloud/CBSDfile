@@ -240,5 +240,11 @@ EOF
 	SSL password:			"${H_SSLPASSWD}"
 
 	PS: default password stored in /root/initial_nc_passwort.txt file;
+
+	Hint: to use occ, for example To rescan folders:
+
+	 cbsd jexec jname=${jname} su -m www -c 'php occ files:scan'
+	 cbsd jexec jname=${jname} su -m www -c 'php occ files:scan-app-data'
+
 EOF
 }
