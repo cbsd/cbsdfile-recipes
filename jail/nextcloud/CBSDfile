@@ -243,8 +243,8 @@ EOF
 
 	Hint: to use occ, for example To rescan folders:
 
-	 cbsd jexec jname=${jname} su -m www -c 'php occ files:scan'
 	 cbsd jexec jname=${jname} su -m www -c 'php occ files:scan-app-data'
+	 cbsd jexec jname=${jname} su -m www -c 'php occ files:scan'
 
 EOF
 }
