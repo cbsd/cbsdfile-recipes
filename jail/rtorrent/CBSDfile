@@ -1,5 +1,8 @@
 # Install rtorrent for CBSD forms-rtorrent
-quiet=0
+PY_VERSION="3.9"                                                                                                # use python ${PY_VERSION} by default, e.g: 3.9
+PYTHON_CMD="python${PY_VERSION}"                                                                                # default python interpreter: python${PY_VERSION}, e.g: python3.9
+PIP_CMD="pip-${PY_VERSION}"                                                                                     # default pip cmd: pip-${PY_VERSION}, e.g: pip-3.9
+PY_PREFIX=$( echo ${PY_VERSION} | tr -d "." ) 
 
 jail_rtorrent()
 {
@@ -7,17 +10,8 @@ jail_rtorrent()
 	host_hostname="${jname}.my.domain"
 	pkg_bootstrap=1
 	ver="native"
-}
 
-preup_rtorrent()
-{
-	# forms-based module, install it first
-	module mode=install forms-rtorrent
-}
-
-postcreate_rtorrent()
-{
-	local _ip
+	pkglist="py${PY_PREFIX}-cloudscraper sox mediainfo"
 
 	# turn off unnecessary services
 	sysrc \
@@ -30,7 +24,27 @@ postcreate_rtorrent()
 		syslogd_enable="NO" \
 		clear_tmp_enable="YES"
 
+
+}
+
+preup_rtorrent()
+{
+	# forms-based module, install it first
+	module mode=install forms-rtorrent
+}
+
+postcreate_rtorrent()
+{
+	local _ip
+
 	forms module=rtorrent inter=0
+
+	jexec <<EOF
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
+
+ln -s /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python
+ln -s /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python3
+EOF
 
 	# may dup
 	jexec service rtorrent stop || true
