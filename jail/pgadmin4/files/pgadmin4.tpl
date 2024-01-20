@@ -32,6 +32,7 @@ pgadmin4_start()
 	export PATH="/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
 	export PGADMIN_SETUP_EMAIL="root@example.org"
 	export PGADMIN_SETUP_PASSWORD="root"
+	export CRYPTOGRAPHY_OPENSSL_NO_LEGACY=1
 
 	[ ! -d ${logdir} ] && mkdir -p ${logdir}
 	touch ${logfile}

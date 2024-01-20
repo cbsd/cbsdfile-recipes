@@ -10,9 +10,8 @@
 ### Postgresql settings
 # GitLab root password:
 # Default Postgresql version
-# FreeBSD defaults: 'grep ^PGSQL_DEFAULT bsd.default-versions.mk'
-[ -z "${GITLAB_PG_VER}" ] && GITLAB_PG_VER="13"
-
+# FreeBSD defaults: 'grep ^PGSQL_DEFAULT /usr/ports/Mk/bsd.default-versions.mk'
+[ -z "${GITLAB_PG_VER}" ] && GITLAB_PG_VER="15"
 
 ### Nginx settings
 # Default nginx port for http:// in jail:
@@ -365,6 +364,32 @@ EOF
 	##sed -i '' -e 's/^.*ssh_port: 22$/    ssh_port: 2223/g' /usr/local/www/gitlab-ce/config/gitlab.yml
 }
 
+configure_gitlab_pages()
+{
+	[ ${IS_UPGRADE} -eq 1 ] && return 0
+
+	# Create a secret
+	jexec <<EOF
+su -l git -c "openssl rand -base64 32 > /usr/local/www/gitlab-ce/.gitlab_pages_secret"
+chmod 640 /usr/local/www/gitlab-ce/.gitlab_pages_secret
+chgrp gitlab-pages /usr/local/www/gitlab-ce/.gitlab_pages_secret
+sysrc gitlab_pages_enable="YES"
+service gitlab_pages restart || true
+cp /usr/local/www/gitlab-ce/lib/support/nginx/gitlab-pages /usr/local/etc/nginx/sites/gitlab-pages.conf
+# Modify the file to your needs, but ensure you escape the . in the server_name correctly.
+# Reload your nginx configuration:
+service nginx restart || true
+EOF
+
+}
+
+check_gitlab()
+{
+	jexec <<EOF
+export SANITIZE=true
+su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:check RAILS_ENV=production"
+EOF
+}
 
 postcreate_gitlab()
 {
@@ -453,6 +478,9 @@ EOF
 	set -o xtrace
 
 	configure_ssh
+
+	configure_gitlab_pages
+	check_gitlab
 
 #	# Create .gitlab_shell_secret symlink
 #	jexec ln -s /usr/local/www/gitlab-ce/.gitlab_shell_secret /usr/local/share/gitlab-shell/.gitlab_shell_secret

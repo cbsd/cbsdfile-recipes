@@ -1,5 +1,5 @@
 #
-pkg_deps_for_build="llvm13 dialog4ports nasm pkgconf automake autoconf gmake libtool"
+pkg_deps_for_build="llvm13 portconfig nasm pkgconf automake autoconf gmake libtool"
 
 jail_xfce4()
 {
