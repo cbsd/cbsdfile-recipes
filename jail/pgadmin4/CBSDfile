@@ -25,34 +25,9 @@ jail_pgadmin4()
 
 	# pyXX-wheel not direct deps, to mute
 	# Using legacy 'setup.py install' for XXX, since package 'wheel' is not installed.
-	pkglist="postgresql${PG_VER}-client \
-		py${PY_PREFIX}-wheel \
-		py${PY_PREFIX}-virtualenv \
-		py${PY_PREFIX}-pip \
-		py${PY_PREFIX}-psutil \
-		py${PY_PREFIX}-flask \
-		py${PY_PREFIX}-flask-login \
-		py${PY_PREFIX}-flask-mail \
-		py${PY_PREFIX}-flask-socketio \
-		py${PY_PREFIX}-flask-babel \
-		py${PY_PREFIX}-flask-security \
-		py${PY_PREFIX}-flask-sqlalchemy \
-		py${PY_PREFIX}-dateutil \
-		py${PY_PREFIX}-email-validator \
-		py${PY_PREFIX}-flask-migrate \
-		py${PY_PREFIX}-openssl \
-		py${PY_PREFIX}-cryptography \
-		py${PY_PREFIX}-pyasn1 \
-		py${PY_PREFIX}-werkzeug \
-		py${PY_PREFIX}-ndg-httpsclient \
-		py${PY_PREFIX}-sqlite3 \
-		py${PY_PREFIX}-pillow \
-		py${PY_PREFIX}-dnspython \
-		py${PY_PREFIX}-bcrypt \
-		py${PY_PREFIX}-psycopg \
-		py${PY_PREFIX}-keyring \
-		rust"
-	# rust to build cryptography module
+	pkglist="postgresql${PG_VER}-client rust"
+
+	# cat packages | xargs whereis | cut -d : -f 2 |xargs
 }
 
 postcreate_pgadmin4()
@@ -66,8 +41,16 @@ postcreate_pgadmin4()
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
 set -o errexit
 
-#echo "env BATCH=no make -C /usr/ports/lang/python311 install"
-#env BATCH=no make -C /usr/ports/lang/python311 install
+echo "env BATCH=no make -C /usr/ports/lang/python311 install"
+env BATCH=no make -C /usr/ports/lang/python311 install
+
+for i in /usr/ports/devel/py-wheel /usr/ports/devel/py-virtualenv /usr/ports/devel/py-pip /usr/ports/sysutils/py-psutil /usr/ports/www/py-flask /usr/ports/www/py-flask-login /usr/ports/mail/py-flask-mail /usr/ports/www/py-flask-socketio /usr/ports/devel/py-flask-babel /usr/ports/www/py-flask-security /usr/ports/databases/py-flask-sqlalchemy /usr/ports/devel/py-dateutil /usr/ports/mail/py-email-validator /usr/ports/www/py-flask-migrate /usr/ports/security/py-cryptography /usr/ports/devel/py-pyasn1 /usr/ports/www/py-werkzeug /usr/ports/net/py-ndg-httpsclient /usr/ports/databases/py-sqlite3 /usr/ports/graphics/py-pillow /usr/ports/dns/py-dnspython /usr/ports/security/py-bcrypt /usr/ports/databases/py-psycopg /usr/ports/security/py-keyring; do
+	env BATCH=no make -C \${i} clean
+	env BATCH=no make -C \${i}
+	env BATCH=no make -C \${i} deinstall || true
+	env BATCH=no make -C \${i} install
+	env BATCH=no make -C \${i} clean
+done
 
 # test for python installed
 if [ ! -x /usr/local/bin/${PYTHON_CMD} ]; then
@@ -138,16 +121,21 @@ Werkzeug==2.2.3; python_version <= '3.7'
 typer[all]==0.9.*
 XEOF
 
+
 /usr/local/bin/pip install -r /tmp/req.txt || true
 /usr/local/bin/pip install eventlet
 /usr/local/bin/pip install flask_paranoid
 # get latest
-pkg remove -f -y py${PY_PREFIX}-openssl \
+#pkg remove -f -y py${PY_PREFIX}-openssl \
 /usr/local/bin/pip install pyopenssl
 /usr/local/bin/pip install -r /tmp/req.txt || true
 /usr/local/bin/pip install ${PGADMIN4_WHL_URL} || true
 /usr/local/bin/pip install --no-dependencies ${PGADMIN4_WHL_URL} 
 sed 's:127.0.0.1:0.0.0.0:g' /usr/local/lib/python${PY_VERSION}/site-packages/pgadmin4/config.py > /usr/local/lib/python${PY_VERSION}/site-packages/pgadmin4/config_local.py
+
+# Trio kqueue support(?)
+rm -f /usr/local/lib/python3.11/site-packages/httpcore/_backends/trio.py
+pip uninstall -y trio
 
 pkg remove -y rust || true
 mkdir -p /var/lib/pgadmin
