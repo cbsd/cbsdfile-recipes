@@ -25,7 +25,9 @@ jail_pgadmin4()
 
 	# pyXX-wheel not direct deps, to mute
 	# Using legacy 'setup.py install' for XXX, since package 'wheel' is not installed.
-	pkglist="postgresql${PG_VER}-client rust"
+	pkglist="postgresql${PG_VER}-client rust lang/python39 security/openssl libuv graphics/libimagequant devel/cmake-core"
+
+# py${PY_PREFIX}-cryptography py${PY_PREFIX}-pip
 
 	# cat packages | xargs whereis | cut -d : -f 2 |xargs
 }
@@ -41,10 +43,7 @@ postcreate_pgadmin4()
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
 set -o errexit
 
-echo "env BATCH=no make -C /usr/ports/lang/python311 install"
-env BATCH=no make -C /usr/ports/lang/python311 install
-
-for i in /usr/ports/devel/py-wheel /usr/ports/devel/py-virtualenv /usr/ports/devel/py-pip /usr/ports/sysutils/py-psutil /usr/ports/www/py-flask /usr/ports/www/py-flask-login /usr/ports/mail/py-flask-mail /usr/ports/www/py-flask-socketio /usr/ports/devel/py-flask-babel /usr/ports/www/py-flask-security /usr/ports/devel/py-dateutil /usr/ports/mail/py-email-validator /usr/ports/www/py-flask-migrate /usr/ports/security/py-cryptography /usr/ports/devel/py-pyasn1 /usr/ports/www/py-werkzeug /usr/ports/net/py-ndg-httpsclient /usr/ports/databases/py-sqlite3 /usr/ports/graphics/py-pillow /usr/ports/dns/py-dnspython /usr/ports/security/py-bcrypt /usr/ports/databases/py-psycopg /usr/ports/security/py-keyring; do
+for i in /usr/ports/devel/py-wheel /usr/ports/devel/py-pip /usr/ports/devel/py-virtualenv /usr/ports/sysutils/py-psutil /usr/ports/security/py-cryptography /usr/ports/net/py-ndg-httpsclient /usr/ports/databases/py-sqlite3 /usr/ports/graphics/py-pillow /usr/ports/dns/py-dnspython /usr/ports/security/py-bcrypt /usr/ports/databases/py-psycopg /usr/ports/security/py-keyring; do
 	env BATCH=no make -C \${i} clean
 	env BATCH=no make -C \${i}
 	env BATCH=no make -C \${i} deinstall || true
