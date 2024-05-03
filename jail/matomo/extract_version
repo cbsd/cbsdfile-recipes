@@ -4,7 +4,7 @@ export CBSD_PWD=/var/empty
 export NOCOLOR=1
 
 ver=$( cbsd jexec jname=matomo <<EOF
-/usr/sbin/pkg info php*-matomo | /usr/bin/grep ^Version | /usr/bin/cut -d : -f 2 | /usr/bin/awk '{printf $1}'
+/usr/sbin/pkg info php82-matomo | /usr/bin/grep ^Version | /usr/bin/cut -d : -f 2 | /usr/bin/awk '{printf $1}'
 EOF
 )
 
