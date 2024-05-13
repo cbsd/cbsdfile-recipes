@@ -19,8 +19,7 @@ postcreate_phpipam()
 
 	# show postmessage
 	cat <<EOF
-	${jname} url          : http://${_ip}:5050
-	${jname} default email: ${PGADMIN_SETUP_EMAIL}
-	${jname} default pass : ${PGADMIN_SETUP_PASSWORD}
+	Default user/password is: Admin/ipamadmin
+	${jname} url          : http://${ip4_addr}
 EOF
 }
