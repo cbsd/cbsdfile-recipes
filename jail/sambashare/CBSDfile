@@ -12,7 +12,7 @@ jail_sambashare()
 	host_hostname="${jname}.my.domain"
 	ver="native"
 
-	pkglist="samba413"
+	pkglist="samba419"
 
 	# set interface=0 when IP not manage by CBSD
 	interface="auto"
