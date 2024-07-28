@@ -22,7 +22,8 @@ jail_rtorrent()
 		sendmail_outbound_enable="NO" \
 		sendmail_msp_queue_enable="NO" \
 		syslogd_enable="NO" \
-		clear_tmp_enable="YES"
+		clear_tmp_enable="YES" \
+		php_fpm_enable="YES"
 }
 
 preup_rtorrent()
