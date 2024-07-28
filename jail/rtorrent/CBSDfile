@@ -1,7 +1,7 @@
 # Install rtorrent for CBSD forms-rtorrent
-PY_VERSION="3.9"                                                                                                # use python ${PY_VERSION} by default, e.g: 3.9
-PYTHON_CMD="python${PY_VERSION}"                                                                                # default python interpreter: python${PY_VERSION}, e.g: python3.9
-PIP_CMD="pip-${PY_VERSION}"                                                                                     # default pip cmd: pip-${PY_VERSION}, e.g: pip-3.9
+PY_VERSION="3.11"                                                                                                # use python ${PY_VERSION} by default, e.g: 3.11
+PYTHON_CMD="python${PY_VERSION}"                                                                                # default python interpreter: python${PY_VERSION}, e.g: python3.11
+PIP_CMD="pip-${PY_VERSION}"                                                                                     # default pip cmd: pip-${PY_VERSION}, e.g: pip-3.11
 PY_PREFIX=$( echo ${PY_VERSION} | tr -d "." ) 
 
 jail_rtorrent()
@@ -23,8 +23,6 @@ jail_rtorrent()
 		sendmail_msp_queue_enable="NO" \
 		syslogd_enable="NO" \
 		clear_tmp_enable="YES"
-
-
 }
 
 preup_rtorrent()
