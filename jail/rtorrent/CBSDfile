@@ -40,8 +40,8 @@ postcreate_rtorrent()
 	jexec <<EOF
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
 
-ln -s /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python
-ln -s /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python3
+ln -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python
+ln -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python3
 EOF
 
 	# may dup
