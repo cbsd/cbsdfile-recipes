@@ -14,16 +14,7 @@ jail_rtorrent()
 	pkglist="py${PY_PREFIX}-cloudscraper sox mediainfo"
 
 	# turn off unnecessary services
-	sysrc \
-		syslogd_enable="NO" \
-		cron_enable="NO" \
-		sendmail_enable="NO" \
-		sendmail_submit_enable="NO"\
-		sendmail_outbound_enable="NO" \
-		sendmail_msp_queue_enable="NO" \
-		syslogd_enable="NO" \
-		clear_tmp_enable="YES" \
-		php_fpm_enable="YES"
+	sysrc="syslogd_enable=NO cron_enable=NO sendmail_enable=NO sendmail_submit_enable=NO sendmail_outbound_enable=NO sendmail_msp_queue_enable=NO clear_tmp_enable=YES php_fpm_enable=YES"
 }
 
 preup_rtorrent()
