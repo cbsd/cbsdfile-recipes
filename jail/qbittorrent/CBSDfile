@@ -1,0 +1,57 @@
+jail_qbittorrent()
+{
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	pkg_bootstrap=1
+	ver="native"
+
+	pkglist="qbittorrent-nox"
+
+	# turn off unnecessary services
+	sysrc="syslogd_enable=NO cron_enable=NO sendmail_enable=NO sendmail_submit_enable=NO sendmail_outbound_enable=NO sendmail_msp_queue_enable=NO clear_tmp_enable=YES php_fpm_enable=YES qbittorrent_enable="YES" qbittorrent_conf_dir=/home/qbittorrent/conf"
+}
+
+postcreate_qbittorrent()
+{
+	local _ip
+
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+
+	jexec chown qbittorrent:qbittorrent /home/qbittorrent/conf
+
+	# postmessage
+	set +o errexit  # retcode for iptype
+
+	OIFS="${IFS}"
+	IFS=","
+	for i in ${_ip}; do
+		IFS="${OIFS}"
+		myip=
+		iptype ${i}
+		case $? in
+			1)
+				# ipv4, no cast
+				myip="${i}"
+				;;
+			2)
+				# ipv6, add brackets
+				myip="[${i}]"
+				;;
+			*)
+				# unknown IP type
+				continue
+				;;
+			esac
+
+		cat <<EOF
+  ${jname} url          : http://${_ip}:8080
+  Default credentials:
+    user: admin
+    password: adminadmin
+
+EOF
+		IFS=","
+	done
+	IFS="${OIFS}"
+	set -o errexit
+}

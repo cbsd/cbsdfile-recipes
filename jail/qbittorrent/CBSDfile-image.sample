@@ -1,0 +1,13 @@
+# Example of using the marketplace of CBSD jail images
+jail_qbittorrent()
+{
+	# Use remote image. You can comment this line to build the image locally.
+	from="https://dl.bsdstore.ru/img/`uname -m`/`uname -m`/`sysctl -n kern.osrelease | cut -d - -f 1`/${jname}/${jname}.img"
+
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	ver="native"
+	interface="auto"
+	runasap=1
+	pkg_bootstrap=0
+}
