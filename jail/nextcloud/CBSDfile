@@ -63,6 +63,8 @@ jail_nextcloud()
 
 	childrenmax=100
 
+	sysrc="syslogd_flags=-ss nginx_enable=YES cron_enable=NO zfs_enable=YES sendmail_enable=NO sendmail_submit_enable=NO sendmail_outbound_enable=NO sendmail_msp_queue_enable=NO clear_tmp_enable=YES php_fpm_enable=YES postgresql_enable=YES redis_enable=YES"
+
 	pkg_bootstrap=1
 }
 
@@ -91,6 +93,8 @@ postcreate_nextcloud()
 	# Configure Postgres
 	# save password in root .pgpassc
 	jexec <<EOF
+	service postgresql stop || true
+
 echo "127.0.0.1:5432:nextcloud:nextcloud:${DB_PASSWORD}" > /root/.pgpass
 echo "::1:5432:nextcloud:nextcloud:${DB_PASSWORD}" >> /root/.pgpass
 chmod 0600 /root/.pgpass
@@ -138,6 +142,7 @@ EOF
 #
 sed -i '' -e "s/^port .*/port 0/" -e "s|^# unixsocket .*|unixsocket /var/run/redis/redis.sock|" -e "s|^# unixsocketperm.*|unixsocketperm 770|" /usr/local/etc/redis.conf
 pw usermod www -G redis
+service redis stop || true
 service redis start
 
 	# wait a little before tests
@@ -153,14 +158,16 @@ EOF
 	# Configure PHP-FPM
 	# php-fpm log
 	jexec <<EOF
+service php_fpm stop || true
 touch /var/log/php-fpm.log /var/log/php.log
 chown www:www /var/log/php-fpm.log /var/log/php.log
 sed -i '' -e "s/^;env/env/" /usr/local/etc/php-fpm.d/www.conf
-service php-fpm start
+service php_fpm start
 EOF
 
 	# Configure Nginx
 	jexec <<EOF
+service nginx stop || true
 chown -R www:www /var/log/nginx
 
 # generate SSL
