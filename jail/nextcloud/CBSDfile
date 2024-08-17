@@ -3,7 +3,7 @@
 # Default Postgresql version ( e.g.: /usr/ports/databases/postgresql${PG_VER}-server )
 # see nextcloud_pkg_list file
 # grep ^PGSQL_DEFAULT /usr/ports/Mk/bsd.default-versions.mk
-PG_VER=15
+PG_VER=16
 # Default PHP version ( e.g.: /usr/ports/lang/php${PHP_VER} )
 # see nextcloud_pkg_list file
 PHP_VER="83"
