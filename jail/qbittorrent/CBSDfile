@@ -8,7 +8,7 @@ jail_qbittorrent()
 	pkglist="qbittorrent-nox"
 
 	# turn off unnecessary services
-	sysrc="syslogd_enable=NO cron_enable=NO sendmail_enable=NO sendmail_submit_enable=NO sendmail_outbound_enable=NO sendmail_msp_queue_enable=NO clear_tmp_enable=YES php_fpm_enable=YES qbittorrent_enable="YES" qbittorrent_conf_dir=/home/qbittorrent/conf"
+	sysrc="syslogd_enable=NO cron_enable=NO sendmail_enable=NO sendmail_submit_enable=NO sendmail_outbound_enable=NO sendmail_msp_queue_enable=NO clear_tmp_enable=YES php_fpm_enable=YES qbittorrent_enable=YES qbittorrent_conf_dir=/home/qbittorrent/conf"
 }
 
 postcreate_qbittorrent()
@@ -17,7 +17,14 @@ postcreate_qbittorrent()
 
 	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
 
-	jexec chown qbittorrent:qbittorrent /home/qbittorrent/conf
+	jexec chown -R 850:850 /home/qbittorrent
+	# may dup
+	jexec service qbittorrent stop || true
+	sleep 2
+	jexec service qbittorrent start || true
+
+	# wait a liitle for process before tests
+	sleep 8
 
 	# postmessage
 	set +o errexit  # retcode for iptype
