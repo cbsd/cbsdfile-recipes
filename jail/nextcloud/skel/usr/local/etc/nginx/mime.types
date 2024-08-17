@@ -68,19 +68,19 @@ types {
     application/xhtml+xml                            xhtml;
     application/xspf+xml                             xspf;
     application/zip                                  zip;
-    
+
     application/octet-stream                         bin exe dll;
     application/octet-stream                         deb;
     application/octet-stream                         dmg;
     application/octet-stream                         iso img;
     application/octet-stream                         msi msp msm;
-    
+
     audio/midi                                       mid midi kar;
     audio/mpeg                                       mp3;
     audio/ogg                                        ogg;
     audio/x-m4a                                      m4a;
     audio/x-realaudio                                ra;
-    
+
     video/3gpp                                       3gpp 3gp;
     video/mp2t                                       ts;
     video/mp4                                        mp4;
