@@ -11,8 +11,9 @@ echo "# Managed by CBSDfile nextcloud template" > /usr/local/etc/nginx/listen80.
 echo "# Managed by CBSDfile nextcloud template" > /usr/local/etc/nginx/listen443.conf
 echo "listen *:80;" >> /usr/local/etc/nginx/listen80.conf
 echo "listen [::]:80;" >> /usr/local/etc/nginx/listen80.conf
-echo "listen *:443 ssl http2;" >> /usr/local/etc/nginx/listen443.conf
-echo "listen [::]:443 ssl http2;" >> /usr/local/etc/nginx/listen443.conf
+echo "listen *:443 ssl" >> /usr/local/etc/nginx/listen443.conf
+echo "listen [::]:443 ssl" >> /usr/local/etc/nginx/listen443.conf
+echo "http2 on;" >> /usr/local/etc/nginx/listen443.conf
 service nginx restart
 EOF
 elif [ -n "${ipv6_first}" -a -z "${ipv4_first}" ]; then
@@ -22,7 +23,8 @@ elif [ -n "${ipv6_first}" -a -z "${ipv4_first}" ]; then
 echo "# Managed by CBSDfile nextcloud template" > /usr/local/etc/nginx/listen80.conf
 echo "# Managed by CBSDfile nextcloud template" > /usr/local/etc/nginx/listen443.conf
 echo "listen [::]:80;" >> /usr/local/etc/nginx/listen80.conf
-echo "listen [::]:443 ssl http2;" >> /usr/local/etc/nginx/listen443.conf
+echo "listen [::]:443 ssl;" >> /usr/local/etc/nginx/listen443.conf
+echo "http2 on;" >> /usr/local/etc/nginx/listen443.conf
 service nginx restart
 EOF
 elif [ -n "${ipv4_first}" -a -z "${ipv6_first}" ]; then
@@ -32,7 +34,8 @@ elif [ -n "${ipv4_first}" -a -z "${ipv6_first}" ]; then
 echo "# Managed by CBSDfile nextcloud template" > /usr/local/etc/nginx/listen80.conf
 echo "# Managed by CBSDfile nextcloud template" > /usr/local/etc/nginx/listen443.conf
 echo "listen *:80;" >> /usr/local/etc/nginx/listen80.conf
-echo "listen *:443 ssl http2;" >> /usr/local/etc/nginx/listen443.conf
+echo "listen *:443 ssl;" >> /usr/local/etc/nginx/listen443.conf
+echo "http2 on;" >> /usr/local/etc/nginx/listen443.conf
 service nginx restart
 EOF
 fi
