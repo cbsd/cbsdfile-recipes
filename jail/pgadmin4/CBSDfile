@@ -120,6 +120,7 @@ XEOF
 # get latest
 #pkg remove -f -y py${PY_PREFIX}-openssl \
 /usr/local/bin/pip install pyopenssl
+/usr/local/bin/pip install install httpagentparser
 /usr/local/bin/pip install -r /tmp/req.txt || true
 /usr/local/bin/pip install ${PGADMIN4_WHL_URL} || true
 /usr/local/bin/pip install --no-dependencies ${PGADMIN4_WHL_URL} 
