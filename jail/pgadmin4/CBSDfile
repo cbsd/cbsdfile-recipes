@@ -25,7 +25,7 @@ jail_pgadmin4()
 
 	# pyXX-wheel not direct deps, to mute
 	# Using legacy 'setup.py install' for XXX, since package 'wheel' is not installed.
-	pkglist="postgresql${PG_VER}-client rust lang/python39 security/openssl libuv graphics/libimagequant devel/cmake-core net/libgravatar"
+	pkglist="postgresql${PG_VER}-client rust lang/python311 security/openssl libuv graphics/libimagequant devel/cmake-core net/libgravatar"
 
 # py${PY_PREFIX}-cryptography py${PY_PREFIX}-pip
 
@@ -115,20 +115,20 @@ libgravatar==1.0.*
 XEOF
 
 /usr/local/bin/pip install -r /tmp/req.txt || true
-/usr/local/bin/pip install eventlet
-/usr/local/bin/pip install flask_paranoid
+/usr/local/bin/pip install eventlet || true
+/usr/local/bin/pip install flask_paranoid || true
 # get latest
 #pkg remove -f -y py${PY_PREFIX}-openssl \
-/usr/local/bin/pip install pyopenssl
-/usr/local/bin/pip install install httpagentparser
+/usr/local/bin/pip install pyopenssl || true
+/usr/local/bin/pip install httpagentparser || true
 /usr/local/bin/pip install -r /tmp/req.txt || true
 /usr/local/bin/pip install ${PGADMIN4_WHL_URL} || true
-/usr/local/bin/pip install --no-dependencies ${PGADMIN4_WHL_URL} 
+/usr/local/bin/pip install --no-dependencies ${PGADMIN4_WHL_URL} || true
 sed 's:127.0.0.1:0.0.0.0:g' /usr/local/lib/python${PY_VERSION}/site-packages/pgadmin4/config.py > /usr/local/lib/python${PY_VERSION}/site-packages/pgadmin4/config_local.py
 
 # Trio kqueue support(?)
 rm -f /usr/local/lib/python3.11/site-packages/httpcore/_backends/trio.py
-pip uninstall -y trio
+pip uninstall -y trio || true
 
 pkg remove -y rust || true
 mkdir -p /var/lib/pgadmin
