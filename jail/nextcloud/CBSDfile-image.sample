@@ -22,5 +22,24 @@ postcreate_nextcloud()
 	${jname} url          : http://${_ip}:80
 	${jname} default login: ncadmin
 	${jname} default pass : random generated, please see `/root/initial_nc_passwort.txt` file inside jail
+	Postgres nextcloud password saved in: /root/.pgpass
+
+	Hint: to use occ, for example To rescan folders:
+
+	 cbsd jexec jname=${jname} su -m www -c 'php /usr/local/www/nextcloud/occ files:scan-app-data'
+	 cbsd jexec jname=${jname} su -m www -c 'php /usr/local/www/nextcloud/occ files:scan --all'
+
+	Also, if you want to allow all domains (not just ${H_NEXTCLOUD_FQDN}), please
+	edit config/config.php:
+
+	 cbsd jexec jname=${jname} vi /usr/local/www/nextcloud/config/config.php
+	 --
+	 'trusted_domains' => [ "*" ],
+	 --
+	to test:
+	 su -m www -c 'php /usr/local/www/nextcloud/occ config:system:get trusted_domains'
+
+	Nextcloud log file (within jail): /usr/local/www/nextcloud/data/nextcloud.log
+
 EOF
 }
