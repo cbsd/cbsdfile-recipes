@@ -12,10 +12,10 @@ fi
 
 ip4_addr=$( cbsd jget jname=${jname} mode=quiet ip4_addr )
 
-GREP_VAL="submitLoginForm"
+GREP_VAL="(submit)*loginButton"
 
 echo "Probing: http://${ip4_addr}:8080 ( filter cmd: ${GREP_VAL} )"
-${CURL_CMD} --no-progress-meter -L http://${ip4_addr}:8080 | grep -i "${GREP_VAL}"
+${CURL_CMD} --no-progress-meter -L http://${ip4_addr}:8080 | grep -E "${GREP_VAL}"
 ret=$?
 
 exit ${ret}
