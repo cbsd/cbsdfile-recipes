@@ -16,6 +16,9 @@ jail_redmine()
 	host_hostname="${jname}.my.domain"
 	ver="native"
 	interface="auto"
+
+	pkglist="databases/mysql80-server databases/mysql80-client"
+
 	pkg_bootstrap=1
 	runasap=1
 }
