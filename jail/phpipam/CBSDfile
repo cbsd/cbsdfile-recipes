@@ -4,7 +4,11 @@
 
 quiet=0
 
+# grep ^PHP_DEFAULT /usr/ports/Mk/bsd.default-versions.mk
 PHP_VER="php82"
+
+# grep ^MYSQL_DEFAULT /usr/ports/Mk/bsd.default-versions.mk
+MYSQL_VER="80"
 
 # no $PHP_VER-phpipam, why?
 
@@ -20,10 +24,13 @@ jail_phpipam()
 	ver="native"
 	# install pgadmin4 deps
 
-	pkglist="databases/mysql80-server ${PHP_VER}-opcache graphics/${PHP_VER}-gd ${PHP_VER}-iconv ${PHP_VER}-dom ${PHP_VER}-curl ${PHP_VER}-ctype net-mgmt/phpipam www/nginx"
+	pkglist="databases/mysql${MYSQL_VER}-server ${PHP_VER}-opcache graphics/${PHP_VER}-gd ${PHP_VER}-iconv ${PHP_VER}-dom ${PHP_VER}-curl ${PHP_VER}-ctype net-mgmt/phpipam www/nginx"
 
 	# set interface=0 when IP not manage by CBSD
 	interface="auto"
+
+	sysrc="syslogd_enable=NO cron_enable=NO sendmail_enable=NO sendmail_submit_enable=NO sendmail_outbound_enable=NO sendmail_msp_queue_enable=NO clear_tmp_enable=YES php_fpm_enable=YES"
+
 
 	allow_sysvipc=1
 	allow_raw_sockets=1

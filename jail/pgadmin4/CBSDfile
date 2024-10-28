@@ -1,13 +1,13 @@
 # Install PGADMIN4 jail
 # todo: switch to rc.d instead of rc.local
 # some defaults:
-PG_VER="15"													# install postgres${PG_VER}-client, grep ^PGSQL /usr/ports/Mk/bsd.default-versions.mk
+PG_VER="16"													# install postgres${PG_VER}-client, grep ^PGSQL /usr/ports/Mk/bsd.default-versions.mk
 PY_VERSION="3.11"												# use python ${PY_VERSION} by default, e.g: 3.11
 #PY_VERSION="3.9"												# use python ${PY_VERSION} by default, e.g: 3.10
 PYTHON_CMD="python${PY_VERSION}"										# default python interpreter: python${PY_VERSION}, e.g: python3.10
 PIP_CMD="pip-${PY_VERSION}"											# default pip cmd: pip-${PY_VERSION}, e.g: pip-3.10
 PY_PREFIX=$( echo ${PY_VERSION} | tr -d "." )									# py${PY_PREFIX}-<packages>, e.g: py39-openssl
-PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v8.9/pip/pgadmin4-8.9-py3-none-any.whl"	# pip whl url/source
+PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v8.12/pip/pgadmin4-8.12-py3-none-any.whl"	# pip whl url/source
 #PGADMIN4_WHL_URL="https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v7.8/pip/pgadmin4-7.8-py3-none-any.whl"	# pip whl url/source
 
 # pgadmin4 default credential
@@ -27,9 +27,6 @@ jail_pgadmin4()
 	# Using legacy 'setup.py install' for XXX, since package 'wheel' is not installed.
 	pkglist="postgresql${PG_VER}-client rust lang/python311 security/openssl libuv graphics/libimagequant devel/cmake-core net/libgravatar"
 
-# py${PY_PREFIX}-cryptography py${PY_PREFIX}-pip
-
-	# cat packages | xargs whereis | cut -d : -f 2 |xargs
 }
 
 postcreate_pgadmin4()
@@ -77,14 +74,14 @@ Flask-Paranoid==0.*
 Flask-Babel==4.0.*
 Flask-Security-Too==5.5.*; python_version >= '3.10'
 Flask-Security-Too==5.4.*; python_version <= '3.9'
-Flask-SocketIO==5.3.*
+Flask-SocketIO==5.4.*
 WTForms==3.1.*
 passlib==1.*
 pytz==2024.*
 speaklater3==1.*
 sqlparse==0.*
 psutil==6.0.*
-psycopg[c]==3.2.1
+psycopg[c]==3.2.3
 python-dateutil==2.*
 SQLAlchemy==2.*
 bcrypt==4.2.*
@@ -92,24 +89,25 @@ cryptography==43.0.*
 sshtunnel==0.*
 ldap3==2.*
 gssapi==1.8.*
-eventlet==0.36.1
+eventlet==0.37.0
 user-agents==2.2.0
 pywinpty==2.0.*; sys_platform=="win32"
 Authlib==1.3.*
 pyotp==2.*
-qrcode==7.*
-boto3==1.34.*
+qrcode==7.*; python_version <= '3.8'
+qrcode[pil]==8.*; python_version >= '3.9'
+boto3==1.35.*
 urllib3==1.26.*
 azure-mgmt-rdbms==10.1.0
 azure-mgmt-resource==23.1.1
 azure-mgmt-subscription==3.1.1
-azure-identity==1.17.1
+azure-identity==1.18.0
 google-api-python-client==2.*
 google-auth-oauthlib==1.2.1
 keyring==25.*
 Werkzeug==3.0.*
 typer[all]==0.12.*
-setuptools==72.*; python_version >= '3.12'
+setuptools==75.*; python_version >= '3.12'
 jsonformatter~=0.3.2
 libgravatar==1.0.*
 XEOF

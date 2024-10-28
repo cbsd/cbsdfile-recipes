@@ -6,10 +6,12 @@ jail_postgresql()
 {
 	# use 'cbsd forms module=postgresql' module
 	forms="postgresql"
-	export H_POSTGRES_VER=13
+	export H_POSTGRES_VER=16
 
 	# to overwrite default settings:
-	# export H_POSTGRES_VER=13 H_SHARED_BUFFERS=256MB ..
+	# export H_POSTGRES_VER=16 H_SHARED_BUFFERS=256MB ..
+
+	sysrc="syslogd_enable=NO cron_enable=NO sendmail_enable=NO sendmail_submit_enable=NO sendmail_outbound_enable=NO sendmail_msp_queue_enable=NO clear_tmp_enable=YES postgresql_enable=YES"
 
 	ip4_addr="DHCP"
 	host_hostname="${jname}.my.domain"
@@ -38,4 +40,5 @@ postcreate_postgresql()
 		sendmail_outbound_enable="NO" \
 		sendmail_msp_queue_enable="NO" \
 		postgresql_enable="YES"
+
 }

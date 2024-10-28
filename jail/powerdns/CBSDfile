@@ -16,7 +16,10 @@ jail_powerdns()
 	#  H_POWERDNS_ZONES_NAME1="example.org" \
 	#  H_POWERDNS_ZONES_MANAGE_RECORDS1="true"
 
+	# grep ^MYSQL_DEFAULT /usr/ports/Mk/bsd.default-versions.mk 
 	pkglist="databases/mysql80-server"
+
+	sysrc="syslogd_enable=NO cron_enable=NO sendmail_enable=NO sendmail_submit_enable=NO sendmail_outbound_enable=NO sendmail_msp_queue_enable=NO clear_tmp_enable=YES powerdns_enable=YES"
 
 	ip4_addr="DHCP"
 	host_hostname="${jname}.my.domain"
