@@ -31,7 +31,6 @@ jail_phpipam()
 
 	sysrc="syslogd_enable=NO cron_enable=NO sendmail_enable=NO sendmail_submit_enable=NO sendmail_outbound_enable=NO sendmail_msp_queue_enable=NO clear_tmp_enable=YES php_fpm_enable=YES"
 
-
 	allow_sysvipc=1
 	allow_raw_sockets=1
 	pkg_bootstrap=1
@@ -120,8 +119,8 @@ EOF
 
 	ip4_addr=$( jget jname=${jname} mode=quiet ip4_addr )
 
-	service mode=action php-fpm start || true
-	service mode=action nginx start || true
+	service mode=action php_fpm restart || true
+	service mode=action nginx restart || true
 
 	# wait a little after php-fpm/nginx restart
 	sleep 2
