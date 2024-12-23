@@ -4,7 +4,7 @@ jail_rabbitmq()
 	forms="rabbitmq"
 
 	# Use remote image. You can comment this line to build the image locally.
-	from="https://dl.bsdstore.ru/img/`uname -m`/`uname -m`/`sysctl -n kern.osrelease | cut -d - -f 1`/${jname}/${jname}.img"
+	from="https://dl.convectix.com/img/`uname -m`/`uname -m`/`sysctl -n kern.osrelease | cut -d - -f 1`/${jname}/${jname}.img"
 
 	# to overwrite default settings, see 'cbsd forms module=rabbitmq vars' for full list
 	# use 'cbsd forms' to re-configure settings in runtime.

@@ -1,4 +1,4 @@
-See PHPIPAM integration with CBSD example: https://www.bsdstore.ru/en/13.0.x/wf_ipam_ssi.html \
+See PHPIPAM integration with CBSD example: https://github.com/cbsd/cbsd/blob/develop/share/docs/general/wf_ipam.md \
 \
 phpipam is an open-source web IP address management application. \
 Its goal is to provide light and simple IP address management \

@@ -35,7 +35,7 @@ postcreate_clickhouse()
 	mkdir -m 0700 /var/db/clickhouse /var/run/clickhouse
 	chown clickhouse:clickhouse /var/db/clickhouse /var/run/clickhouse
 
-	fetch -o /usr/local/bin/clickhouse https://dl.bsdstore.ru/bin/${arch}/${arch}/${ver}/clickhouse
+	fetch -o /usr/local/bin/clickhouse https://dl.convectix.com/bin/${arch}/${arch}/${ver}/clickhouse
 	chmod a+x /usr/local/bin/clickhouse
 	ln -sf /usr/local/bin/clickhouse /usr/local/bin/clickhouse-server
 	ln -sf /usr/local/bin/clickhouse /usr/local/bin/clickhouse-client
