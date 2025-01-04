@@ -1,0 +1,4 @@
+Jail that synchronizes the CBSD mirror and serves its \
+contents via a HTTP/web server.
+\
+See also: https://github.com/cbsd/mirrors \

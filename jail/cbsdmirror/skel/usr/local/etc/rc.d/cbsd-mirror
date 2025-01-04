@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+#
+
+# PROVIDE: cbsd_mirror
+# REQUIRE: mountcritremote FILESYSTEMS
+
+. /etc/rc.subr
+
+name="cbsd_mirror"
+desc="Update crontab for CBSD mirror"
+rcvar="cbsd_mirror_enable"
+start_cmd="cbsd_mirror_start"
+stop_cmd=":"
+
+cbsd_mirror_start()
+{
+	startmsg 'Updating cbsd_mirror crontab.'
+	if [ -x /usr/local/bin/cbsd-mirror ]; then
+		/usr/local/bin/cbsd-mirror
+	else
+		echo "no such /usr/local/bin/cbsd-mirror executable"
+		exit 1
+	fi
+}
+
+load_rc_config $name
+run_rc_command "$1"

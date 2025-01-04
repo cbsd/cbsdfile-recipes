@@ -1,0 +1,55 @@
+# Install CBSD mirror service, info: https://github.com/cbsd/mirrors
+
+### Global settings
+
+# enable syncronize ISO ?
+# '0' - to disable or string in crontab(5) format
+# E.g. run sync five minutes after midnight, every day:
+# CBSD_MIRROR_SYNC_ISO="5 0 * * *"
+# 
+# default: sync every 14 minutes:
+[ -z "${CBSD_MIRROR_SYNC_ISO}" ] && CBSD_MIRROR_SYNC_ISO="*/14 * * * *"
+
+# enable syncronize CLOUD ?
+# '0' - to disable or string in crontab(5) format
+# E.g. run sync five minutes after midnight, every day:
+# CBSD_MIRROR_SYNC_CLOUD="5 0 * * *"
+# 
+# default: sync every 15 minutes:
+[ -z "${CBSD_MIRROR_SYNC_CLOUD}" ] && CBSD_MIRROR_SYNC_CLOUD="*/15 * * * *"
+
+# default RSYNC flags string
+# for ISO:
+[ -z "${CBSD_MIRROR_SYNC_ISO_RSYNC_FLAGS}" ] && CBSD_MIRROR_SYNC_ISO_RSYNC_FLAGS="-a --delete"
+# for CLOUD:
+[ -z "${CBSD_MIRROR_SYNC_CLOUD_RSYNC_FLAGS}" ] && CBSD_MIRROR_SYNC_CLOUD_RSYNC_FLAGS="-a --delete"
+
+# NGINX vhost docroot for /iso + /cloud
+[ -z "${CBSD_MIRROR_SYNC_DOCROOT}" ] && CBSD_MIRROR_SYNC_DOCROOT="/usr/local/www/cbsd-mirror"
+
+jail_cbsdmirror()
+{
+	from="https://dl.convectix.com/img/`uname -m`/`uname -m`/`sysctl -n kern.osrelease | cut -d - -f 1`/${jname}/${jname}.img"
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	ver="native"
+	interface="auto"
+	runasap=1
+	pkg_bootstrap=0
+}
+
+postcreate_cbsdmirror()
+{
+	${SED_CMD} -e "s:%%CBSD_MIRROR_SYNC_ISO%%:${CBSD_MIRROR_SYNC_ISO}:g" \
+		-e "s:%%CBSD_MIRROR_SYNC_CLOUD%%:${CBSD_MIRROR_SYNC_CLOUD}:g" \
+		-e "s:%%CBSD_MIRROR_SYNC_ISO_RSYNC_FLAGS%%:${CBSD_MIRROR_SYNC_ISO_RSYNC_FLAGS}:g" \
+		-e "s:%%CBSD_MIRROR_SYNC_CLOUD_RSYNC_FLAGS%%:${CBSD_MIRROR_SYNC_CLOUD_RSYNC_FLAGS}:g" \
+		-e "s:%%CBSD_MIRROR_SYNC_DOCROOT%%:${CBSD_MIRROR_SYNC_DOCROOT}:g" \
+		files/cbsd_mirror.conf.tpl > ${data}/usr/local/etc/cbsd_mirror.conf
+
+	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
+	# postmessage
+	cat <<EOF
+	${jname} url          : http://${_ip}
+EOF
+}

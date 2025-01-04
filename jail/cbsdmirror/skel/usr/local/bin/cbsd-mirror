@@ -1,0 +1,138 @@
+#!/bin/sh
+
+CBSD_MIRROR_SYNC_ISO="*/14 * * * *"
+CBSD_MIRROR_SYNC_CLOUD="*/15 * * * *"
+CBSD_MIRROR_SYNC_ISO_RSYNC_FLAGS="-a --delete"
+CBSD_MIRROR_SYNC_CLOUD_RSYNC_FLAGS="-a --delete"
+CBSD_MIRROR_SYNC_DOCROOT="/usr/local/www/cbsd-mirror"
+
+CONF_FILES="/etc/cbsd_mirror.conf /usr/local/etc/cbsd_mirror.conf"
+
+for i in ${CONF_FILES}; do
+	[ -r "${i}" ] && . "${i}"
+done
+
+reconfigure_cron()
+{
+	local _tmp=$( mktemp )
+
+	trap "/bin/rm -f ${_tmp}" HUP INT ABRT BUS TERM  EXIT
+
+	cat > ${_tmp} <<EOF
+SHELL=/bin/sh
+PATH=/etc:/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+EOF
+
+	chown -R nobody:nobody ${CBSD_MIRROR_SYNC_DOCROOT}
+
+	if [ "${CBSD_MIRROR_SYNC_ISO}" != "0" ]; then
+		echo "${CBSD_MIRROR_SYNC_ISO} /usr/bin/lockf -s -t0 /tmp/cbsd_mirror_iso.lock /usr/local/bin/cbsd-mirror iso > /var/log/cbsd_mirror_iso.log 2>&1" >> ${_tmp}
+		touch /var/log/cbsd_mirror_iso.log
+		chown nobody:nobody /var/log/cbsd_mirror_iso.log
+	fi
+	if [ "${CBSD_MIRROR_SYNC_CLOUD}" != "0" ]; then
+		echo "${CBSD_MIRROR_SYNC_CLOUD} /usr/bin/lockf -s -t0 /tmp/cbsd_mirror_cloud.lock /usr/local/bin/cbsd-mirror cloud > /var/log/cbsd_mirror_cloud.log 2>&1" >> ${_tmp}
+		touch /var/log/cbsd_mirror_cloud.log
+		chown nobody:nobody /var/log/cbsd_mirror_cloud.log
+	fi
+
+	[ ! -d /var/cron/tabs ] && mkdir -p /var/cron/tabs
+	cp -a ${_tmp} /var/cron/tabs/nobody
+	/etc/rc.d/cron restart
+	echo "CRON reconfigured:"
+	cat /var/cron/tabs/nobody
+}
+
+html_stats()
+{
+	local _md5iso= _md5cloud= _recalc_size=0
+	local _md5iso_last=0 _md5cloud_last=0
+
+	if [ -d "${CBSD_MIRROR_SYNC_DOCROOT}/iso" ]; then
+		_md5iso=$( find ${CBSD_MIRROR_SYNC_DOCROOT}/iso/ -type f -exec md5 -q {} \; | md5 -q )
+	else
+		_md5iso=0
+	fi
+	if [ -d "${CBSD_MIRROR_SYNC_DOCROOT}/cloud" ]; then
+		_md5cloud=$( find ${CBSD_MIRROR_SYNC_DOCROOT}/cloud/ -type f -exec md5 -q {} \; | md5 -q )
+	else
+		_md5cloud=0
+	fi
+
+	if [ -r "${CBSD_MIRROR_SYNC_DOCROOT}/iso.md5.html" ]; then
+		_md5iso_last=$( cat ${CBSD_MIRROR_SYNC_DOCROOT}/iso.md5.html )
+	else
+		_md5iso_last=0
+	fi
+
+	if [ -r "${CBSD_MIRROR_SYNC_DOCROOT}/cloud.md5.html" ]; then
+		_md5cloud_last=$( cat ${CBSD_MIRROR_SYNC_DOCROOT}/cloud.md5.html )
+	else
+		_md5cloud_last=0
+	fi
+
+	echo "${_md5iso}" > ${CBSD_MIRROR_SYNC_DOCROOT}/iso.md5.html
+	echo "${_md5cloud}" > ${CBSD_MIRROR_SYNC_DOCROOT}/cloud.md5.html
+
+	[ "${_md5iso}" != "${_md5iso_last}" ] && _recalc_size=1
+	[ "${_md5cloud}" != "${_md5cloud_last}" ] && _recalc_size=1
+
+	echo "<html><body><pre>" > ${CBSD_MIRROR_SYNC_DOCROOT}/index.html
+	if [ ${_recalc_size} -eq 1 ]; then
+		du -sh ${CBSD_MIRROR_SYNC_DOCROOT}/* | grep -v *.html >> ${CBSD_MIRROR_SYNC_DOCROOT}/index.html
+	fi
+	echo >> ${CBSD_MIRROR_SYNC_DOCROOT}/index.html
+	echo "last sync time: `date`, code: ${RSYNC_CODES} (recalc: ${_recalc_size})" >> ${CBSD_MIRROR_SYNC_DOCROOT}/index.html
+	[ "${RSYNC_CODE}" != "0" ] && cat /var/log/cbsd_mirror_${TARGET}.log >> ${CBSD_MIRROR_SYNC_DOCROOT}/index.html
+	echo "</pre></body></html>" >> ${CBSD_MIRROR_SYNC_DOCROOT}/index.html
+}
+
+if [ -z "${1}" ]; then
+	reconfigure_cron
+	exit 0
+else
+	TARGET="${1}"
+fi
+
+case "${TARGET}" in
+	iso)
+		echo "${TARGET} SYNC STARTED"
+		/usr/local/bin/rsync ${CBSD_MIRROR_SYNC_ISO_RSYNC_FLAGS} rsync://mirror.convectix.com/${TARGET}/ ${CBSD_MIRROR_SYNC_DOCROOT}/${TARGET}/ > /var/log/cbsd_mirror_${TARGET}.log 2>&1
+
+		_ret=$?
+		case ${_ret} in
+			0|6|24|25)
+				# rsync good codes
+				RSYNC_CODES=0
+				;;
+			*)
+				# error?
+				RSYNC_CODES=1
+				;;
+		esac
+
+		html_stats
+		;;
+	cloud)
+		echo "${TARGET} SYNC STARTED"
+		/usr/local/bin/rsync ${CBSD_MIRROR_SYNC_ISO_RSYNC_FLAGS} rsync://mirror.convectix.com/${TARGET}/ ${CBSD_MIRROR_SYNC_DOCROOT}/${TARGET}/ > /var/log/cbsd_mirror_${TARGET}.log 2>&1
+		_ret=$?
+		case ${_ret} in
+			0|6|24|25)
+				# rsync good codes
+				RSYNC_CODES=0
+				;;
+			*)
+				# error?
+				RSYNC_CODES=1
+				;;
+		esac
+
+		html_stats
+		;;
+	*)
+		echo "UNKNOWN TARGET: ${TARGET}"
+		;;
+esac
+
+exit 0
