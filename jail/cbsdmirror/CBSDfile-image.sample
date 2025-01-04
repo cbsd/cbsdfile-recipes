@@ -1,5 +1,8 @@
 # Install CBSD mirror service, info: https://github.com/cbsd/mirrors
 
+# example (disable ISO sync, enable CLOUD sync every ten minutes) :
+# env CBSD_MIRROR_SYNC_ISO="0" CBSD_MIRROR_SYNC_CLOUD="*/10 * * * *" cbsd up
+
 ### Global settings
 
 # enable syncronize ISO ?
