@@ -3,10 +3,10 @@
 #   hint: password for skel//home/jupyter/.jupyter/jupyter_server_config.json can be extracted with:
 #   python3 -c "from notebook.auth import passwd; print(passwd('jupyter'))"
 #
-PY_VERSION="3.9"												# use python ${PY_VERSION} by default, e.g: 3.9
-PYTHON_CMD="python${PY_VERSION}"										# default python interpreter: python${PY_VERSION}, e.g: python3.9
-PIP_CMD="pip-${PY_VERSION}"											# default pip cmd: pip-${PY_VERSION}, e.g: pip-3.9
-PY_PREFIX=$( echo ${PY_VERSION} | tr -d "." )									# py${PY_PREFIX}-<packages>, e.g: py39-openssl
+PY_VERSION="3.11"												# use python ${PY_VERSION} by default, e.g: 3.11
+PYTHON_CMD="python${PY_VERSION}"										# default python interpreter: python${PY_VERSION}, e.g: python3.11
+PIP_CMD="pip-${PY_VERSION}"											# default pip cmd: pip-${PY_VERSION}, e.g: pip-3.11
+PY_PREFIX=$( echo ${PY_VERSION} | tr -d "." )									# py${PY_PREFIX}-<packages>, e.g: py311-openssl
 
 # to overwrite JUPYTERLAB FQDN servername from env/args:
 #  env H_JUPYTERLAB_FQDN=my.example.ru cbsd up

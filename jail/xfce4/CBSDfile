@@ -76,7 +76,7 @@ postcreate_xfce4()
 		echo "allowed_users = anybody" | tee -a /usr/local/etc/X11/Xwrapper.config
 
 		# remove build deps
-		pkg remove -f ${pkg_deps_for_build}
+		pkg remove -y -f ${pkg_deps_for_build}
 
 		if [ -r /usr/local/etc/rc.d/xrdp ]; then
 			touch /var/db/xrdp.rebuilded

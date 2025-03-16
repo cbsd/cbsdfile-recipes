@@ -5,7 +5,7 @@ export NOCOLOR=1
 [ -z "${jname}" ] && jname="gitlab"
 
 res=$( cbsd jexec jname=${jname} <<EOF
-su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:check RAILS_ENV=production"
+su -l git -c "cd /usr/local/www/gitlab && rake gitlab:check RAILS_ENV=production"
 EOF
 )
 

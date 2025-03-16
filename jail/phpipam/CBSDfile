@@ -5,7 +5,7 @@
 quiet=0
 
 # grep ^PHP_DEFAULT /usr/ports/Mk/bsd.default-versions.mk
-PHP_VER="php82"
+PHP_VER="php83"
 
 # grep ^MYSQL_DEFAULT /usr/ports/Mk/bsd.default-versions.mk
 MYSQL_VER="80"

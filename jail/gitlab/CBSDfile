@@ -59,11 +59,11 @@ preup()
 	# check for maxopenfiles/perproc:
 	# yarn buld requirered more thean default 1000 files:
 	# 
-	# [webpack-cli] [Error: EMFILE: too many open files, open '/usr/local/www/gitlab-ce/node_modules/.cache/compression-webpack-plugin/tmp/d655487c'] {
+	# [webpack-cli] [Error: EMFILE: too many open files, open '/usr/local/www/gitlab/node_modules/.cache/compression-webpack-plugin/tmp/d655487c'] {
 	#  errno: -24,
 	#  code: 'EMFILE',
 	#  syscall: 'open',
-	#  path: '/usr/local/www/gitlab-ce/node_modules/.cache/compression-webpack-plugin/tmp/d655487c'
+	#  path: '/usr/local/www/gitlab/node_modules/.cache/compression-webpack-plugin/tmp/d655487c'
 	#}
 	# error Command failed with exit code 2.
 
@@ -99,7 +99,7 @@ jail_gitlab()
 
 	host_hostname="${jname}.idefix.lan"
 	pkg_bootstrap="1"
-	pkglist="security/ca_root_nss databases/postgresql${GITLAB_PG_VER}-contrib databases/postgresql${GITLAB_PG_VER}-server www/nginx www/gitlab-ce"
+	pkglist="security/ca_root_nss databases/postgresql${GITLAB_PG_VER}-contrib databases/postgresql${GITLAB_PG_VER}-server www/nginx www/gitlab"
 }
 
 # PostgresQL init function
@@ -181,6 +181,7 @@ psql -d template1 -U postgres -c "CREATE DATABASE gitlabhq_production OWNER git;
 # Connect as superuser to gitlab db and enable pg_trgm extension if not installed
 psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
 psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS btree_gist;"
+psql -U postgres -d gitlabhq_production -c "CREATE EXTENSION IF NOT EXISTS plpgsql;"
 EOF
 }
 
@@ -190,7 +191,6 @@ configure_redis()
 # Add git user to redis group
 pw groupmod redis -m git
 chown root:wheel /usr/local/etc/redis.conf
-
 service redis restart
 EOF
 }
@@ -200,7 +200,7 @@ configure_gitlab()
 {
 	# Set db password
 	jexec <<EOF
-sed -i '' -e 's#"secure password"#"${DB_PASSWORD}"#g' /usr/local/www/gitlab-ce/config/database.yml
+sed -i '' -e 's#"secure password"#"${DB_PASSWORD}"#g' /usr/local/www/gitlab/config/database.yml
 EOF
 
 #	# 4. GitLab
@@ -209,7 +209,7 @@ EOF
 # You need to be root user
 
 # Go to GitLab installation folder
-cd /usr/local/www/gitlab-ce
+cd /usr/local/www/gitlab
 
 # Update GitLab config file, follow the directions at the top of the file
 #vi config/gitlab.yml
@@ -269,7 +269,7 @@ EOF
 		jexec <<EOF
 # gitlab need write access to create a symlink
 chown git /usr/local/share/gitlab-shell
-yes yes | su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:setup DISABLE_DATABASE_ENVIRONMENT_CHECK=1 RAILS_ENV=production GITLAB_ROOT_PASSWORD=\"${GITLAB_ROOT_PASSWORD}\""
+yes yes | su -l git -c "cd /usr/local/www/gitlab && rake gitlab:setup DISABLE_DATABASE_ENVIRONMENT_CHECK=1 RAILS_ENV=production GITLAB_ROOT_PASSWORD=\"${GITLAB_ROOT_PASSWORD}\""
 # Make sure we undo the temporary permission fix again
 chown root /usr/local/share/gitlab-shell
 EOF
@@ -279,8 +279,8 @@ EOF
 		jexec <<EOF
 # gitlab need write access to create a symlink
 chown git /usr/local/share/gitlab-shell
-su -l git -c "cd /usr/local/www/gitlab-ce && rake db:migrate RAILS_ENV=production"
-su -l git -c "cd /usr/local/www/gitlab-ce && rake cache:clear RAILS_ENV=production"
+su -l git -c "cd /usr/local/www/gitlab && rake db:migrate RAILS_ENV=production"
+su -l git -c "cd /usr/local/www/gitlab && rake cache:clear RAILS_ENV=production"
 # Make sure we undo the temporary permission fix again
 chown root /usr/local/share/gitlab-shell
 EOF
@@ -296,13 +296,15 @@ EOF
 	#Check if GitLab and its environment are configured correctly:
 
 	jexec <<EOF
-su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:env:info RAILS_ENV=production"
+su -l git -c "cd /usr/local/www/gitlab && rake gitlab:env:info RAILS_ENV=production"
 EOF
 
 	# Compile Assets
 	jexec <<EOF
-su -l git -c "cd /usr/local/www/gitlab-ce && yarn install --production --pure-lockfile"
-su -l git -c "cd /usr/local/www/gitlab-ce && RAILS_ENV=production NODE_ENV=production USE_DB=false SKIP_STORAGE_VALIDATION=true NODE_OPTIONS='--max_old_space_size=3584' bundle exec rake gitlab:assets:compile"
+# If you use corepack, execute: chown git /usr/local/www/gitlab/package.json
+su -l git -c "cd /usr/local/www/gitlab && yarn config set python /usr/local/bin/python3.11"
+su -l git -c "cd /usr/local/www/gitlab && yarn install --production --pure-lockfile"
+su -l git -c "cd /usr/local/www/gitlab && RAILS_ENV=production NODE_ENV=production USE_DB=false SKIP_STORAGE_VALIDATION=true bundle exec rake gitlab:assets:compile"
 EOF
 
 	if [ ${IS_UPGRADE} -eq 0 ]; then
@@ -333,11 +335,11 @@ configure_nginx()
 	${workdir}/jails-system/${jname}/master_poststart.d/set_nginx_listen.sh
 
 	jexec <<EOF
-cp -a /usr/local/www/gitlab-ce/lib/support/nginx/gitlab /usr/local/www/gitlab-ce/lib/support/nginx/gitlab.bak
+cp -a /usr/local/www/gitlab/lib/support/nginx/gitlab /usr/local/www/gitlab/lib/support/nginx/gitlab.bak
 # We can concat in one sed but then it is more difficult to understand which replacement is the error
-sed -i '' -e "s#^.*listen \\\[::\\\].*#  include /usr/local/etc/nginx/listen-http.conf;#g" /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
-sed -i '' -e "s#^.*listen 0.0.0.0:80.*#  include /usr/local/etc/nginx/listen-https.conf;#g" /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
-sed -i '' -e "s#YOUR_SERVER_FQDN#_#g" /usr/local/www/gitlab-ce/lib/support/nginx/gitlab
+sed -i '' -e "s#^.*listen \\\[::\\\].*#  include /usr/local/etc/nginx/listen-http.conf;#g" /usr/local/www/gitlab/lib/support/nginx/gitlab
+sed -i '' -e "s#^.*listen 0.0.0.0:80.*#  include /usr/local/etc/nginx/listen-https.conf;#g" /usr/local/www/gitlab/lib/support/nginx/gitlab
+sed -i '' -e "s#YOUR_SERVER_FQDN#_#g" /usr/local/www/gitlab/lib/support/nginx/gitlab
 
 mkdir /var/log/nginx
 nginx -t
@@ -361,7 +363,7 @@ chown git:git /usr/local/git/.ssh/config
 ${ECHO} "${N1_COLOR}non-standart ssh port saved in: ${N2_COLOR}/usr/local/git/.ssh/config${N0_COLOR}"
 EOF
 
-	##sed -i '' -e 's/^.*ssh_port: 22$/    ssh_port: 2223/g' /usr/local/www/gitlab-ce/config/gitlab.yml
+	##sed -i '' -e 's/^.*ssh_port: 22$/    ssh_port: 2223/g' /usr/local/www/gitlab/config/gitlab.yml
 }
 
 configure_gitlab_pages()
@@ -370,12 +372,12 @@ configure_gitlab_pages()
 
 	# Create a secret
 	jexec <<EOF
-su -l git -c "openssl rand -base64 32 > /usr/local/www/gitlab-ce/.gitlab_pages_secret"
-chmod 640 /usr/local/www/gitlab-ce/.gitlab_pages_secret
-chgrp gitlab-pages /usr/local/www/gitlab-ce/.gitlab_pages_secret
+su -l git -c "openssl rand -base64 32 > /usr/local/www/gitlab/.gitlab_pages_secret"
+chmod 640 /usr/local/www/gitlab/.gitlab_pages_secret
+chgrp gitlab-pages /usr/local/www/gitlab/.gitlab_pages_secret
 sysrc gitlab_pages_enable="YES"
 service gitlab_pages restart || true
-cp /usr/local/www/gitlab-ce/lib/support/nginx/gitlab-pages /usr/local/etc/nginx/sites/gitlab-pages.conf
+cp /usr/local/www/gitlab/lib/support/nginx/gitlab-pages /usr/local/etc/nginx/sites/gitlab-pages.conf
 # Modify the file to your needs, but ensure you escape the . in the server_name correctly.
 # Reload your nginx configuration:
 service nginx restart || true
@@ -387,7 +389,7 @@ check_gitlab()
 {
 	jexec <<EOF
 export SANITIZE=true
-su -l git -c "cd /usr/local/www/gitlab-ce && rake gitlab:check RAILS_ENV=production"
+su -l git -c "cd /usr/local/www/gitlab && rake gitlab:check RAILS_ENV=production"
 EOF
 }
 
@@ -483,16 +485,16 @@ EOF
 	check_gitlab
 
 #	# Create .gitlab_shell_secret symlink
-#	jexec ln -s /usr/local/www/gitlab-ce/.gitlab_shell_secret /usr/local/share/gitlab-shell/.gitlab_shell_secret
+#	jexec ln -s /usr/local/www/gitlab/.gitlab_shell_secret /usr/local/share/gitlab-shell/.gitlab_shell_secret
 
 
 #	# Update config files
 #	jexec <<EOF
 ## Replace host with our IP
-##sed -i '' -e 's/^.*host: localhost$/    host: 192.168.0.251/g' /usr/local/www/gitlab-ce/config/gitlab.yml
-#sed -i '' -e "s/^.*host: localhost$/    host: ${ip4_addr}/g" /usr/local/www/gitlab-ce/config/gitlab.yml
+##sed -i '' -e 's/^.*host: localhost$/    host: 192.168.0.251/g' /usr/local/www/gitlab/config/gitlab.yml
+#sed -i '' -e "s/^.*host: localhost$/    host: ${ip4_addr}/g" /usr/local/www/gitlab/config/gitlab.yml
 ## Replace port for gitlab web interface
-#sed -i '' -e 's/^.*port: 80 .*$/    port: 10080/g' /usr/local/www/gitlab-ce/config/gitlab.yml
+#sed -i '' -e 's/^.*port: 80 .*$/    port: 10080/g' /usr/local/www/gitlab/config/gitlab.yml
 ## gitlab ssh config
 
 
@@ -516,7 +518,7 @@ EOF
 	Ex. change amount of workers to 3 for 2GB RAM server
 	Set the number of workers to at least the number of cores:
 
-	vi /usr/local/www/gitlab-ce/config/puma.rb
+	vi /usr/local/www/gitlab/config/puma.rb
 EOF
 
 	if [ "${GITLAB_SSH_PORT}" != "22" ]; then

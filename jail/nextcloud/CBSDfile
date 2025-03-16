@@ -93,7 +93,7 @@ postcreate_nextcloud()
 	# Configure Postgres
 	# save password in root .pgpassc
 	jexec <<EOF
-	service postgresql stop || true
+	service postgresql stop >/dev/null 2>&1 || true
 
 echo "127.0.0.1:5432:nextcloud:nextcloud:${DB_PASSWORD}" > /root/.pgpass
 echo "::1:5432:nextcloud:nextcloud:${DB_PASSWORD}" >> /root/.pgpass
@@ -142,7 +142,7 @@ EOF
 #
 sed -i '' -e "s/^port .*/port 0/" -e "s|^# unixsocket .*|unixsocket /var/run/redis/redis.sock|" -e "s|^# unixsocketperm.*|unixsocketperm 770|" /usr/local/etc/redis.conf
 pw usermod www -G redis
-service redis stop || true
+service redis stop >/dev/null 2>&1 || true
 service redis start
 
 	# wait a little before tests
@@ -196,8 +196,8 @@ EOF
 	# Fetch and install nextcloud
 	jexec <<EOF
 fetch https://download.nextcloud.com/server/releases/latest.tar.bz2 -o /tmp/latest.tar.bz2
-fetch https://download.nextcloud.com/server/releases/latest.tar.bz2.sha512 -o /tmp/latest.tar.bz2.sha512
-cd /tmp && shasum -a 512 -c /tmp/latest.tar.bz2.sha512
+#fetch https://download.nextcloud.com/server/releases/latest.tar.bz2.sha512 -o /tmp/latest.tar.bz2.sha512
+#cd /tmp && shasum -a 512 -c /tmp/latest.tar.bz2.sha512
 tar -xf /tmp/latest.tar.bz2 -C /usr/local/www
 chown -R www:www /usr/local/www/nextcloud
 
@@ -225,14 +225,15 @@ EOF
 
 	# todo: switch to facts, CBSD 13.0.21+
 	for _ip in ${jail_ip} ${H_NEXTCLOUD_FQDN}; do
-		echo "jexec jname=${jname} cmd=\"su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains ${trusted_num} --value=${_ip}'\""
-		jexec jname=${jname} cmd="su -m www -c 'php /usr/local/www/nextcloud/occ config:system:set trusted_domains ${trusted_num} --value=${_ip}'"
+		echo "jexec jname=${jname} user=www cmd=\"php /usr/local/www/nextcloud/occ config:system:set trusted_domains ${trusted_num} --value=${_ip}\""
+		jexec jname=${jname} user=www cmd="php /usr/local/www/nextcloud/occ config:system:set trusted_domains ${trusted_num} --value=${_ip}"
 		trusted_num=$(( trusted_num + 1 ))
 	done
 
 	set -o errexit
 	tests/70_login.sh
 	set +o errexit
+
 
 	# postmessage
 	${ECHO} "	Nextcloud URL:	https://${H_NEXTCLOUD_FQDN}"

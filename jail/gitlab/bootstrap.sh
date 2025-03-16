@@ -13,6 +13,6 @@ cat <<EOF
 	Ex. change amount of workers to 3 for 2GB RAM server
 	Set the number of workers to at least the number of cores:
 
-	vi /usr/local/www/gitlab-ce/config/puma.rb
+	vi /usr/local/www/gitlab/config/puma.rb
 
 EOF
