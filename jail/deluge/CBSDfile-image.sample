@@ -1,32 +1,22 @@
+# Example of using the marketplace of CBSD jail images
 jail_qbittorrent()
 {
+	# Use remote image. You can comment this line to build the image locally.
+	from="https://dl.convectix.com/img/`uname -m`/`uname -m`/`sysctl -n kern.osrelease | cut -d - -f 1`/${jname}/${jname}.img"
+
 	ip4_addr="DHCP"
 	host_hostname="${jname}.my.domain"
-	pkg_bootstrap=1
 	ver="native"
-
-	pkglist="qbittorrent-nox"
-
-	# turn off unnecessary services
-	sysrc="syslogd_enable=NO cron_enable=NO sendmail_enable=NO sendmail_submit_enable=NO sendmail_outbound_enable=NO sendmail_msp_queue_enable=NO clear_tmp_enable=YES qbittorrent_enable=YES qbittorrent_conf_dir=/home/qbittorrent/conf"
+	interface="auto"
+	runasap=1
+	pkg_bootstrap=0
 }
 
 postcreate_qbittorrent()
 {
-	local _ip=
-
-	set +o xtrace
+	local _ip
 
 	_ip=$( jget jname=${jname} mode=quiet ip4_addr )
-
-	jexec chown -R 850:850 /home/qbittorrent
-	# may dup
-	jexec service qbittorrent stop || true
-	sleep 2
-	jexec service qbittorrent start || true
-
-	# wait a liitle for process before tests
-	sleep 8
 
 	# postmessage
 	set +o errexit  # retcode for iptype
@@ -50,7 +40,7 @@ postcreate_qbittorrent()
 				# unknown IP type
 				continue
 				;;
-			esac
+		esac
 
 		cat <<EOF
   ${jname} url          : http://${_ip}:8080

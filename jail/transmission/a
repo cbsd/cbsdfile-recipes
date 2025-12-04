@@ -1,0 +1,3 @@
+cbsd jexec<<EOF
+	sed -i '' 's#rpc-whitelist-enabled": true,#rpc-whitelist-enabled": false,#' /usr/local/etc/transmission/home/settings.json
+EOF
