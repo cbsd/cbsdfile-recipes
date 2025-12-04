@@ -1,5 +1,7 @@
 PY_VERSION="3.11"						# use python ${PY_VERSION} by default, e.g.: 3.11
-PHP_VERSION="82"						# use PHP ${PHP_VERSION} by default, e.g.: 85
+# PHP 85 not supported yet: https://github.com/Novik/ruTorrent/issues/2992
+#PHP_VERSION="85"						# use PHP ${PHP_VERSION} by default, e.g.: 85
+PHP_VERSION="84"						# use PHP ${PHP_VERSION} by default, e.g.: 8
 PYTHON_CMD="python${PY_VERSION}"				# default python interpreter: python${PY_VERSION}, e.g: python3.11
 PIP_CMD="pip-${PY_VERSION}"					# default pip cmd: pip-${PY_VERSION}, e.g: pip-3.11
 PY_PREFIX=$( echo ${PY_VERSION} | ${TR_CMD} -d "." )		# TRIM '.': 3.11 -> 311
@@ -27,8 +29,8 @@ postcreate_rtorrent()
 	jexec <<EOF
 export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
 
-${LN_CMD} -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python
-${LN_CMD} -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python3
+ln -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python
+ln -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python3
 
 if [ ! -d /home/rtorrent/rutorrent ]; then
 	/usr/local/bin/git clone https://github.com/Novik/ruTorrent.git /home/rtorrent/rutorrent
@@ -37,6 +39,10 @@ fi
 cp -a /home/rtorrent/config.php /home/rtorrent/rutorrent/conf/config.php
 cp -a /home/rtorrent/settings.php /home/rtorrent/rutorrent/php/settings.php
 cp -a /home/rtorrent/dump/conf.php /home/rtorrent/rutorrent/plugins/dump/conf.php
+
+# https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=291382#c3 -> https://github.com/rakshasa/rtorrent/issues/1657
+cp -a /home/rtorrent/rtorrent /usr/local/etc/rc.d/rtorrent
+
 mkdir -p /home/rtorrent/downloads /home/rtorrent/session /home/rtorrent/rutorrent/php/share /home/rtorrent/rutorrent/php/share/torrents /var/nginx/client_body_temp
 
 chown -R rtorrent:rtorrent /home/rtorrent
@@ -54,10 +60,7 @@ cmake .
 make
 make install
 
-
 EOF
-
-	# 
 
 	# may dup
 	jexec service nginx stop 2>/dev/null || true

@@ -64,7 +64,7 @@
 		"unrar"	=> '/usr/local/bin/unrar',
 	);
 
-	$localHostedMode = false;		// Set to true if rTorrent is hosted on the SAME machine as ruTorrent
+	$localHostedMode = true;		// Set to true if rTorrent is hosted on the SAME machine as ruTorrent
 	
 	$cachedPluginLoading = false;		// Set to true to enable rapid cached loading of ruTorrent plugins
 										// Required to clear web browser cache when upgrading versions	
