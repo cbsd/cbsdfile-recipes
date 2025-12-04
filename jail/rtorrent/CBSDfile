@@ -13,7 +13,7 @@ jail_rtorrent()
 	pkg_bootstrap=1
 	ver="native"
 
-	pkglist="python${PY_PREFIX} py${PY_PREFIX}-cloudscraper sysutils/tmux devel/git archivers/unrar archivers/rar archivers/zip multimedia/mediainfo multimedia/ffmpeg ftp/curl audio/sox php${PHP_VERSION} php${PHP_VERSION}-mbstring php${PHP_VERSION}-dom php${PHP_VERSION}-xml php${PHP_VERSION}-session php${PHP_VERSION}-fileinfo www/nginx net-p2p/rtorrent tinyxml2"
+	pkglist="python${PY_PREFIX} py${PY_PREFIX}-cloudscraper sysutils/tmux devel/git archivers/unrar archivers/rar archivers/zip multimedia/mediainfo multimedia/ffmpeg ftp/curl audio/sox php${PHP_VERSION} php${PHP_VERSION}-mbstring php${PHP_VERSION}-dom php${PHP_VERSION}-xml php${PHP_VERSION}-session php${PHP_VERSION}-fileinfo www/nginx net-p2p/rtorrent tinyxml2 rsync"
 
 	# manage services
 	sysrc="syslogd_enable=NO cron_enable=NO sendmail_enable=NO sendmail_submit_enable=NO sendmail_outbound_enable=NO sendmail_msp_queue_enable=NO clear_tmp_enable=YES php_fpm_enable=YES nginx_enable=YES rtorrent_enable=YES rtorrent_bindaddr=127.0.0.1 rtorrent_download_dir=/home/rtorrent/downloads"
@@ -32,8 +32,12 @@ export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/b
 ln -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python
 ln -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python3
 
-if [ ! -d /home/rtorrent/rutorrent ]; then
-	/usr/local/bin/git clone https://github.com/Novik/ruTorrent.git /home/rtorrent/rutorrent
+if [ ! -r /home/rtorrent/rutorrent/index.html ]; then
+	# first boot
+	/usr/local/bin/git clone https://github.com/Novik/ruTorrent.git /home/rtorrent/rutorrent-tmp
+	[ ! -d  /home/rtorrent/rutorrent ] && mkdir -p /home/rtorrent/rutorrent
+	rsync -avz /home/rtorrent/rutorrent-tmp/ /home/rtorrent/rutorrent/
+	rm -rf /home/rtorrent/rutorrent-tmp
 fi
 
 cp -a /home/rtorrent/config.php /home/rtorrent/rutorrent/conf/config.php
@@ -45,7 +49,7 @@ cp -a /home/rtorrent/dump/conf.php /home/rtorrent/rutorrent/plugins/dump/conf.ph
 
 mkdir -p /home/rtorrent/downloads /home/rtorrent/session /home/rtorrent/rutorrent/php/share /home/rtorrent/rutorrent/php/share/torrents /var/nginx/client_body_temp
 
-chown -R rtorrent:rtorrent /home/rtorrent
+chown -R rtorrent:rtorrent /home/rtorrent /var/db/rtorrent
 
 mkdir /var/log/nginx
 touch /var/log/nginx/php.err
