@@ -41,7 +41,7 @@ cp -a /home/rtorrent/settings.php /home/rtorrent/rutorrent/php/settings.php
 cp -a /home/rtorrent/dump/conf.php /home/rtorrent/rutorrent/plugins/dump/conf.php
 
 # https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=291382#c3 -> https://github.com/rakshasa/rtorrent/issues/1657
-cp -a /home/rtorrent/rtorrent /usr/local/etc/rc.d/rtorrent
+#cp -a /home/rtorrent/rtorrent /usr/local/etc/rc.d/rtorrent
 
 mkdir -p /home/rtorrent/downloads /home/rtorrent/session /home/rtorrent/rutorrent/php/share /home/rtorrent/rutorrent/php/share/torrents /var/nginx/client_body_temp
 
@@ -59,7 +59,9 @@ cd dumptorrent
 cmake .
 make
 make install
-
+rm -rf /root/dumptorrent
+pkg clean -ya
+pkg autoremove -y
 EOF
 
 	# may dup
