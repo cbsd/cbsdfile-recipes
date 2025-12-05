@@ -1,8 +1,10 @@
 # Uncomment for ZFS external volumes
 #zroot/gitlab/postgres /var/db/postgres zfs rw 0 0
-#zroot/gitlab/repositories /usr/local/git/repositories zfs rw 0
+#zroot/gitlab/repositories /usr/local/git/repositories zfs rw 0 0
 
 # Uncomment for non-ZFS (UFS, GlusterFS/NFS/Ceph) external volumes
-/usr/jails/VOLUMES/rtorrent/home/rtorrent/rutorrent/share /home/rtorrent/rutorrent/share nullfs rw 0 0
-/usr/jails/VOLUMES/rtorrent/home/rtorrent/downloads /home/rtorrent/downloads nullfs rw 0 0
-/usr/jails/VOLUMES/rtorrent/var/db/rtorrent /var/db/rtorrent nullfs rw 0 0
+# WORKDIR_VOLUMES extracted to "~cbsd/VOLUMES/${jname}"
+# reserved: NODE_VOLUMES, CLUSTER_VOLUMES
+WORKDIR_VOLUMES/home/rtorrent/rutorrent/share	/home/rtorrent/rutorrent/share	nullfs	rw 0 0
+WORKDIR_VOLUMES/home/rtorrent/downloads		/home/rtorrent/downloads	nullfs	rw 0 0
+WORKDIR_VOLUMES/var/db/rtorrent			/var/db/rtorrent		nullfs	rw 0 0

@@ -32,22 +32,33 @@ export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/b
 ln -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python
 ln -sf /usr/local/bin/${PYTHON_CMD} /usr/local/bin/python3
 
+/usr/local/bin/git clone https://github.com/Novik/ruTorrent.git /home/rtorrent/rutorrent-tmp
+
 if [ ! -r /home/rtorrent/rutorrent/index.html ]; then
 	# first boot
-	/usr/local/bin/git clone https://github.com/Novik/ruTorrent.git /home/rtorrent/rutorrent-tmp
 	[ ! -d  /home/rtorrent/rutorrent ] && mkdir -p /home/rtorrent/rutorrent
 	rsync -avz /home/rtorrent/rutorrent-tmp/ /home/rtorrent/rutorrent/
-	rm -rf /home/rtorrent/rutorrent-tmp
+	cp -a /home/rtorrent/config.php /home/rtorrent/rutorrent/conf/config.php
+	cp -a /home/rtorrent/settings.php /home/rtorrent/rutorrent/php/settings.php
+	cp -a /home/rtorrent/dump/conf.php /home/rtorrent/rutorrent/plugins/dump/conf.php
+else
+	# upgrade
+	rsync --delete -avz \
+		--exclude /home/rtorrent/rutorrent/conf/config.php \
+		--exclude /home/rtorrent/rutorrent/php/settings.php \
+		--exclude /home/rtorrent/rutorrent/plugins/dump/conf.php \
+		--exclude /home/rtorrent/rutorrent/share \
+		/home/rtorrent/rutorrent-tmp/ /home/rtorrent/rutorrent/
 fi
 
-cp -a /home/rtorrent/config.php /home/rtorrent/rutorrent/conf/config.php
-cp -a /home/rtorrent/settings.php /home/rtorrent/rutorrent/php/settings.php
-cp -a /home/rtorrent/dump/conf.php /home/rtorrent/rutorrent/plugins/dump/conf.php
+rm -rf /home/rtorrent/rutorrent-tmp
 
 # https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=291382#c3 -> https://github.com/rakshasa/rtorrent/issues/1657
 #cp -a /home/rtorrent/rtorrent /usr/local/etc/rc.d/rtorrent
 
-mkdir -p /home/rtorrent/downloads /home/rtorrent/session /home/rtorrent/rutorrent/php/share /home/rtorrent/rutorrent/php/share/torrents /var/nginx/client_body_temp
+for i in /home/rtorrent/downloads /home/rtorrent/session /home/rtorrent/rutorrent/php/share /home/rtorrent/rutorrent/php/share/torrents /var/nginx/client_body_temp; do
+	[ ! -d "${i}" ] && mkdir -p "${i}"
+done
 
 chown -R rtorrent:rtorrent /home/rtorrent /var/db/rtorrent
 
