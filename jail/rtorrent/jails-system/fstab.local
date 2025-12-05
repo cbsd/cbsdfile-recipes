@@ -3,6 +3,6 @@
 #zroot/gitlab/repositories /usr/local/git/repositories zfs rw 0
 
 # Uncomment for non-ZFS (UFS, GlusterFS/NFS/Ceph) external volumes
-/shared/rtorrent/home/rtorrent/rutorrent/share /home/rtorrent/rutorrent/share nullfs rw 0 0
-/shared/rtorrent/home/rtorrent/downloads /home/rtorrent/rutorrent/downloads nullfs rw 0 0
-/shared/rtorrent/var/db/rtorrent /var/db/rtorrent nullfs rw 0 0
+/usr/jails/VOLUMES/rtorrent/home/rtorrent/rutorrent/share /home/rtorrent/rutorrent/share nullfs rw 0 0
+/usr/jails/VOLUMES/rtorrent/home/rtorrent/downloads /home/rtorrent/downloads nullfs rw 0 0
+/usr/jails/VOLUMES/rtorrent/var/db/rtorrent /var/db/rtorrent nullfs rw 0 0
