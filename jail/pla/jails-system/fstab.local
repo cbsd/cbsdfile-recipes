@@ -1,0 +1,9 @@
+# Uncomment for non-ZFS (UFS, GlusterFS/NFS/Ceph) external volumes
+# WORKDIR_VOLUMES extracted to "~cbsd/VOLUMES/${jname}"
+# reserved: NODE_VOLUMES, CLUSTER_VOLUMES
+
+# sample with VOLUME:
+#WORKDIR_VOLUMES/db	/usr/local/www/pla/db	nullfs	rw 0 0
+
+# sample with /var/db/pkg + RO
+/var/db/pkg /usr/local/www/pla/db	nullfs	ro 0 0

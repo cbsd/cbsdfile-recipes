@@ -1,0 +1,62 @@
+# TODO: inherit timezone -> php.ini ?
+quiet=0
+
+# grep ^PHP_DEFAULT /usr/ports/Mk/bsd.default-versions.mk
+PHP_VER="php85"
+
+jail_pla()
+{
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	ver="native"
+	pkglist="${PHP_VER}-pdo_sqlite ${PHP_VER}-session www/nginx"
+
+	# set interface=0 when IP not manage by CBSD
+	interface="auto"
+
+	sysrc="syslogd_enable=NO cron_enable=NO sendmail_enable=NO sendmail_submit_enable=NO sendmail_outbound_enable=NO sendmail_msp_queue_enable=NO clear_tmp_enable=YES php_fpm_enable=YES nginx_enable=YES"
+
+	pkg_bootstrap=1
+}
+
+postcreate_pla()
+{
+	local _ip
+
+	jexec<<________EOF
+	mkdir /var/log/php
+	touch /var/log/php/php.err
+	chown -R www:www /var/log/php
+	[ ! -d /usr/local/www/pla/db ] && mkdir /usr/local/www/pla/db
+	chown www:www /usr/local/www/pla/db
+________EOF
+
+#	jscp files/nginx.conf ${jname}:/usr/local/etc/nginx
+#	set +o xtrace
+
+#	jscp files/php-fpm.d/www.conf ${jname}:/usr/local/etc/php-fpm.d/
+#	jscp files/php.ini ${jname}:/usr/local/etc/
+#	jscp files/nginx.ini ${jname}:/usr/local/etc/nginx/
+
+	ip4_addr=$( jget jname=${jname} mode=quiet ip4_addr )
+
+	service mode=action php_fpm restart || true
+	service mode=action nginx restart || true
+
+	# wait a little after php-fpm/nginx restart
+	sleep 2
+
+	# postmessage
+	${CAT_CMD} <<________EOF
+	${N1_COLOR}
+	${jname} url          : http://${ip4_addr}
+	default password: admin
+
+	Please edit /usr/local/www/pla/phpliteadmin.config.php as you needs
+	Default directory for SQLite3 db: /usr/local/www/pla/db
+
+	( hint: can be used with volumes via fstab.local )
+
+	${N0_COLOR}
+________EOF
+}
