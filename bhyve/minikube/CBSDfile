@@ -1,0 +1,70 @@
+bhyve_minikube()
+{
+	vm_ram="8g"
+	vm_cpus="4"
+	imgsize="40g"
+	vm_os_type="linux"
+	vm_os_profile="cloud-Debian-13-x86_64"
+
+	ip4_addr="DHCP"
+	# ~cbsd/etc/bhyve-default-default.conf :
+	# ci_gw4="10.0.0.1"
+
+	ci_jname="${jname}"
+	ci_fqdn="${fqdn}"
+	ci_ip4_addr="${ip4_addr}"
+	ci_gw4="${ip4_gw}"
+	imgtype="zvol"
+	runasap=1
+	ssh_wait=1
+}
+
+
+postcreate_minikube()
+{
+	bexec <<EOF
+export DEBIAN_FRONTEND="noninteractive"
+sudo apt-get update
+sudo apt-get upgrade -y docker.io
+
+wget https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
+sudo dpkg -i minikube*.deb
+sudo usermod -aG docker debian && newgrp docker
+EOF
+
+	# relogin to apply group members
+	bexec <<EOF
+
+minikube start --driver=docker
+
+[ ! -d /etc/systemd/system ] && sudo mkdir -p /etc/systemd/system
+
+sudo tee /etc/systemd/system/minikube.service <<TEE_EOF
+[Unit]
+Description=Minikube auto-start
+After=docker.service
+
+[Service]
+Type=simple
+User=docker
+ExecStart=/usr/local/bin/minikube start --driver=docker
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+TEE_EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable minikube.service
+sudo systemctl start minikube.service
+
+rm -rf .minikube/cache
+tar cfz .minikube.tgz .minikube
+
+minikube ip
+
+EOF
+
+	echo "Don't forget to add route for 192.168.49.0/24 to $ip4_addr"
+
+}
