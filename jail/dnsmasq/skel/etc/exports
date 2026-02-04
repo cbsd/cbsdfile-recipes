@@ -1,0 +1,3 @@
+#/usr/local/srv/ltsp/build /usr/local/srv/ltsp/clonos /usr/local/srv/ltsp/oleg /usr/local/srv/ltsp/isboot -network 192.168.0.0/24 -maproot=root
+/usr/local/srv/pxe -alldirs -sec=sys -maproot=root -network 192.168.0.0/24
+V4: /usr/local/srv/pxe -sec=sys -network 192.168.0 -mask 255.255.255.0

@@ -1,0 +1,83 @@
+#!ipxe
+cpuid --ext 29 && set img x86_64 || set img x86_32
+isset ${root-path} && set img ${root-path} ||
+isset ${proxydhcp/dhcp-server} && set srv ${proxydhcp/dhcp-server} || set srv ${next-server}
+
+goto ${mac} || goto start
+# The following client-specific settings can be defined:
+# DEFAULT_IMAGE (img): default menu item for that client
+# KERNEL_PARAMETERS (cmdline_client): additional kernel parameters
+# MENU_TIMEOUT (menu-timeout): menu milliseconds, 0=forever, -1=hide menu
+# For those clients, :mac:address sections are generated below
+
+
+:start
+# To completely hide the menu, set menu-timeout to -1
+isset ${menu-timeout} || set menu-timeout 15000
+iseq "${menu-timeout}" "-1" && goto ${img} ||
+menu iPXE boot menu - ${hostname}:${srv}:${root-path} || goto ${img}
+item --key d disk                 Boot from the first local disk
+item --gap                        Boot an image from the network:
+
+item
+item --gap                        Other options:
+item --key m memtest              Memory test
+item --key c config               Enter iPXE configuration
+item --key c gdisk                GDISK
+item --key c shellx64             SHELLX64
+item --key s shell                Drop to iPXE shell
+item --key x refind               ReFind
+
+item
+choose --timeout ${menu-timeout} --default ${img} img || goto cancel
+goto ${img}
+
+:memtest
+iseq ${platform} pcbios && kernel memtest.0 || kernel memtest.efi
+# Boot "fails" on normal memtest exit with Esc, so show the menu again
+boot ||
+goto start
+
+:config
+config
+goto start
+
+:shell
+echo Type 'exit' to get the back to the menu
+shell
+goto start
+
+:disk
+# Boot the first local HDD
+# https://ipxe.org/cmd/sanboot
+sanboot --no-describe --drive 0x80 || goto failed
+#sanboot --no-describe --drive 0x81 || goto failed
+#sanboot --no-describe --drive 0 --filename \EFI\boot\bootx64.efi || goto failed
+
+:refind
+kernel refind/bootx64.efi || goto failed
+boot ||
+goto start
+
+:gdisk
+kernel refind/tools/gdisk_x64.efi || goto failed
+boot ||
+goto start
+
+:shellx64
+kernel refind/tools/shellx64.efi || goto failed
+boot ||
+goto start
+
+:exit
+# Exit with error, to fall back to the next boot option
+# http://forum.ipxe.org/showthread.php?tid=6775
+exit 1
+
+:cancel
+echo You cancelled the menu, dropping to shell
+goto shell
+
+:failed
+echo Booting failed, dropping to shell
+goto shell

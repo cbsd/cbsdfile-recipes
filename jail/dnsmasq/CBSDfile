@@ -1,0 +1,80 @@
+# Install dnsmasq/DHCP server for diskless/bootp
+quiet=0
+
+jail_dnsmasq()
+{
+	forms="dnsmasq"
+
+	ip4_addr="DHCP"
+	host_hostname="${jname}.my.domain"
+	ver="native"
+
+	pkglist="dnsmasq lighttpd"
+
+	# manage services
+	sysrc="cron_enable=NO sendmail_enable=NO sendmail_submit_enable=NO sendmail_outbound_enable=NO sendmail_msp_queue_enable=NO clear_tmp_enable=YES dnsmasq_enable=YES dnsmasq_flags=\"--dhcp-leasefile=/var/db/dnsmasq/dnsmasq.leases\""
+
+	# set interface=0 when IP not manage by CBSD
+	interface="auto"
+
+	# 5 not suitable for dnsmasq: bpf needed
+	#devfs_ruleset="5"
+	devfs_ruleset="99"
+	vnet=1
+	allow_nfsd=1
+	allow_raw_sockets=1
+	pkg_bootstrap=1
+
+	# Put ~cbsd/jails-system/$jname to VOLUMES: ~cbsd/VOLUMES/$jname-system
+	sysdir_volume=1
+
+	# for non-interactive:
+	# export H_NS1=172.16.0.1 H_NS2=0 H_GW4="172.16.0.1" H_IP4RANGE="172.16.0.40,172.16.0.199,12h" H_NFSNET="0"
+	# or:
+	# export H_DNSMASQ_NS1=172.16.0.1 \
+	# H_DNSMASQ_NS2=0 \
+	# H_DNSMASQ_GW4="172.16.0.1 \
+	# ...
+
+	#export H_NS1="172.16.0.1" \
+	#	H_NS2="0" \
+	#	H_GW4="172.16.0.1" \
+	#	H_IP4RANGE="172.16.0.40,172.16.0.199,12h" \
+	#	H_NFSNET="0"
+}
+
+preup_dnsmasq()
+{
+	# forms-based module, install it first
+	module mode=install forms-dnsmasq
+}
+
+postcreate_dnsmasq()
+{
+	local _ip=
+
+	set +o xtrace
+	echo "${jname} post-message:"
+	${ECHO} " ${N2_COLOR}Start using the service by configuring${N0_COLOR}:"
+	echo
+	${ECHO} "  ${N2_COLOR}cbsd jconfig jname=${jname} net${N0_COLOR}"
+	${ECHO} "  ${N2_COLOR}cbsd jconfig jname=${jname} net-tui${N0_COLOR}"
+	echo
+	echo " Please do not forget to tune NFS settings via:"
+	echo
+	echo "  sysctl vfs.nfsd.maxthreads=256"
+	echo
+	echo " Also this container uses custom sysctl(8) tuning inside jail:"
+	echo
+	echo "  vfs.nfs.enable_uidtostring=1"
+	echo "  vfs.nfsd.enable_stringtouid=1"
+	echo
+	echo "Additional CBSD scripts:"
+	echo
+	echo "  Show IP/MAC lease records:"
+	echo
+	${ECHO} "  % ${N2_COLOR}cbsd jexec jname=${jname} dnsmasq_records${N0_COLOR}"
+	echo
+	echo "  or: http://$ip4_addr"
+	echo
+}

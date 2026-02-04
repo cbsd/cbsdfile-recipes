@@ -1,0 +1,12 @@
+#!/usr/local/bin/cbsd
+
+myconf()
+{
+	local _ret=
+
+	forms module=dnsmasq jname=CBSDSYS updcol=cur
+	_ret=$?
+
+	[ ${_ret} -ne 0 ] && err 1 "${N2_COLOR}${CIX_APP} error: canceled${N0_COLOR}"
+
+}

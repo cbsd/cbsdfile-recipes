@@ -1,0 +1,15 @@
+
+  Additional CBSD scripts:
+
+  Show IP/MAC lease records:
+
+  % cbsd jexec jname=dnsmasq dnsmasq_records
+ 
+  or: http://$ip4_addr
+
+  --
+
+  To integration with CBSD DHCP script:
+
+  exclude="cbsd jexec jname=dnsmasq dnsmasq_ips"
+

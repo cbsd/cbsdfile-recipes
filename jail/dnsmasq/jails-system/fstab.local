@@ -1,0 +1,9 @@
+# Uncomment for ZFS external volumes
+#zroot/gitlab/postgres /var/db/postgres zfs rw 0 0
+#zroot/gitlab/repositories /usr/local/git/repositories zfs rw 0 0
+
+# Uncomment for non-ZFS (UFS, GlusterFS/NFS/Ceph) external volumes
+# WORKDIR_VOLUMES extracted to "~cbsd/VOLUMES/${jname}"
+# reserved: NODE_VOLUMES, CLUSTER_VOLUMES
+WORKDIR_VOLUMES/var/db/dnsmasq			/var/db/dnsmasq		nullfs	rw 0 0
+WORKDIR_VOLUMES/usr/local/srv			/usr/local/srv		nullfs	rw 0 0

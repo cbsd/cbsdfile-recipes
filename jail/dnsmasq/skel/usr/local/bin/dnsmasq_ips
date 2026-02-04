@@ -1,0 +1,19 @@
+#!/bin/sh
+# Used by CBSD as 'dhcpd_ipv4_exclude_helper='
+# e.g. in ~cbsd/etc/dhcpd.conf:
+# dhcpd_ipv4_exclude_helper='jexec dnsmasq /usr/local/bin/dnsmasq_ips'
+LEASE_FILE="/var/db/dnsmasq/dnsmasq.leases"
+
+if [ ! -r "${LEASE_FILE}" ]; then
+	exit 0
+fi
+
+IPS=
+FIRST=1
+grep . ${LEASE_FILE} | while read _ts _mac _ips _no; do
+	[ ${FIRST} -eq 0 ] && printf " " # Add separator for subsequent items
+	printf "${_ips}"
+	FIRST=0 # Mark that the first element has been processed
+done
+
+exit 0

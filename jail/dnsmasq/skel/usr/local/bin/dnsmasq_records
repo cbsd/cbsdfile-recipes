@@ -1,0 +1,97 @@
+#!/bin/sh
+HTML=0
+LEASE_FILE="/var/db/dnsmasq/dnsmasq.leases"
+LEASE_FILE_ERR="/var/db/dnsmasq/dnsmasq.leases.err"
+[ -n "${1}" ] && HTML=1
+
+show()
+{
+	if [ ${HTML} -eq 1 ]; then
+		[ ! -d /usr/local/srv ] && mkdir -p /usr/local/srv
+		cat > /usr/local/srv/index.html <<________________EOF
+<html>
+<head>
+<title>DNSMasq records</title>
+</head>
+<body>
+<table border=1>
+<tr><td>IP</td><td>MAC</td><td>Name</td><td>Status</td><td>Operate</td></tr>
+________________EOF
+
+	fi
+	echo "IP|MAC|NAME|STATUS|ACTION"
+
+	if [ -r ${LEASE_FILE} ]; then
+		cat ${LEASE_FILE} | while read _ts _mac _ip _name _mac2; do
+			_action=
+			_status=
+
+			if [ -r ${LEASE_FILE_ERR} ]; then
+				_exist_ts=$( grep ${_mac} ${LEASE_FILE_ERR} | awk '{printf $1}' )
+				if [ -n "${_exist_ts}" ]; then
+					[ ${_exist_ts} -gt ${_ts} ] && continue
+				fi
+			fi
+
+			if [ -r /var/log/tftp/${_ip}.action ]; then
+				read -r _action < /var/log/tftp/${_ip}.action
+			fi
+			if [ -r /var/log/tftp/${_ip}.status ]; then
+				read -r _status < /var/log/tftp/${_ip}.status
+			fi
+
+			[ -z "${_name}" ] && _name="none"
+			[ -z "${_action}" ] && _action="nop"
+			[ -z "${_status}" ] && _status="nop"
+
+			if [ ${HTML} -eq 1 ]; then
+				echo "<tr><td>${_ip}</td><td>${_mac}</td><td>${_name}</td><td>${_status}</td><td>${_action}</td></tr>" >> /usr/local/srv/index.html
+			fi
+			echo "${_ip}|${_mac}|${_name}|${_status}|${_action}"
+		done
+	fi
+
+	if [ -r ${LEASE_FILE_ERR} ]; then
+		cat ${LEASE_FILE_ERR} | while read _ts _id _mac; do
+		_action=
+		_status=
+		_ip="0.0.0.0"
+		_exist_ts=0
+
+		_exist_ts=$( grep ${_mac} ${LEASE_FILE} | awk '{printf $1}' )
+
+		if [ -n "${_exist_ts}" ]; then
+			[ ${_exist_ts} -gt ${_ts} ] && continue
+		fi
+
+		if [ -r /var/log/tftp/${_mac}.action ]; then
+			read -r _action < /var/log/tftp/${_mac}.action
+		fi
+		if [ -r /var/log/tftp/${_mac}.status ]; then
+			read -r _status < /var/log/tftp/${_mac}.status
+		fi
+
+		[ -z "${_name}" ] && _name="none"
+		[ -z "${_action}" ] && _action="nop"
+		[ -z "${_status}" ] && _status="nop"
+
+		if [ ${HTML} -eq 1 ]; then
+			echo "<tr><td>${_ip}</td><td>${_mac}</td><td>${_name}</td><td>${_status}</td><td>${_action}</td></tr>" >> /usr/local/srv/index.html
+		fi
+		echo "${_ip}|${_mac}|${_name}|${_status}|${_action}"
+	done
+	
+	fi
+
+	if [ ${HTML} -eq 1 ]; then
+		cat >> /usr/local/srv/index.html<<________________EOF
+</table>
+</body>
+</html>
+________________EOF
+	fi
+}
+
+show | column -s '|' -t
+
+exit 0

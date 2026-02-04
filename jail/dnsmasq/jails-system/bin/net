@@ -1,0 +1,127 @@
+#!/usr/local/bin/cbsd
+
+. ${subrdir}/nc.subr
+. ${system}
+. ${strings}
+. ${tools}
+
+myconf()
+{
+	local _net= _range= _net= _default=
+	local _nfs=0 JNAME=
+
+	[ -z "${jname}" ] && err 1 "${N1_COLOR}${CIX_APP} error: empty jname${N0_COLOR}"
+	JNAME=$( echo ${jname} | ${TR_CMD} '[:lower:]' '[:upper:]' )
+
+	# init
+	if [ -r "${jailsysdir}/${jname}/helpers/dnsmasq.sqlite" ]; then
+		# read current values
+		eval $( forms module=dnsmasq jname=${jname} export=1 inter=0 noop=1 )
+	else
+		# init default settings
+		eval $( forms module=dnsmasq jname=${jname} export=1 inter=0 )
+	fi
+
+	# GW4
+	if [ -z "${H_DNSMASQ_GW4}" ]; then
+		eval DNSMASQ_GW4="\$${JNAME}_DNSMASQ_GW4"
+	else
+		DNSMASQ_GW4="${H_DNSMASQ_GW4}"
+	fi
+	[ -z "${DNSMASQ_GW4}" ] && DNSMASQ_GW4="172.16.0.1"
+
+	# NS1
+	if [ -z "${H_DNSMASQ_NS1}" ]; then
+		eval DNSMASQ_NS1="\$${JNAME}_DNSMASQ_NS1"
+	else
+		DNSMASQ_NS1="${H_DNSMASQ_NS1}"
+	fi
+	[ -z "${DNSMASQ_NS1}" ] && DNSMASQ_NS1="0"
+
+	# NS2
+	if [ -z "${H_DNSMASQ_NS2}" ]; then
+		eval DNSMASQ_NS2="\$${JNAME}_DNSMASQ_NS2"
+	else
+		DNSMASQ_NS2="${H_DNSMASQ_NS2}"
+	fi
+	[ -z "${DNSMASQ_NS2}" ] && DNSMASQ_NS2="0"
+
+	# IP4RANGE
+	if [ -z "${H_DNSMASQ_IP4RANGE}" ]; then
+		eval DNSMASQ_IP4RANGE="\$${JNAME}_DNSMASQ_IP4RANGE"
+	else
+		DNSMASQ_IP4RANGE="${H_DNSMASQ_IP4RANGE}"
+	fi
+	[ -z "${DNSMASQ_IP4RANGE}" ] && DNSMASQ_IP4RANGE="172.16.0.2,172.16.0.99,12h"
+
+	# NFSNET
+	if [ -z "${H_DNSMASQ_NFSNET}" ]; then
+		eval DNSMASQ_NFSNET="\$${JNAME}_DNSMASQ_NFSNET"
+	else
+		DNSMASQ_NFSNET="${H_DNSMASQ_NFSNET}"
+	fi
+	[ -z "${DNSMASQ_NFSNET}" ] && DNSMASQ_NFSNET="172.16.0.0/24"
+
+	trap "echo; exit" HUP INT ABRT BUS TERM EXIT
+
+	getyesno "${N1_COLOR}Do you want to enable ${N2_COLOR}PXE/NFS/tftp${N1_COLOR} services for diskless downloads?${N0_COLOR}"
+	if [ $? -eq 0 -o $? -eq 3 ]; then
+		_nfs=1
+	else
+		DNSMASQ_NFSNET="0"
+		_nfs=0
+	fi
+
+	if [ ${_nfs} -eq 1 ]; then
+		_default="${DNSMASQ_NFSNET}"
+		printf "${N1_COLOR}Trusted NFSv3/v4 network, e.g. ${N2_COLOR}${_default}: ${N0_COLOR}"
+		read DNSMASQ_NFSNET
+		# todo: input validation
+		[ -z "${DNSMASQ_NFSNET}" ] && DNSMASQ_NFSNET="${_default}"
+	fi
+
+	_default="${DNSMASQ_IP4RANGE}"
+
+	${ECHO} "${N1_COLOR}Please set DHCP-range, format: ${N2_COLOR}<start>,<end>,<leasetime>${N0_COLOR}"
+	printf "${N1_COLOR}e.g.: ${N2_COLOR}${_default}${N1_COLOR}: ${N0_COLOR}"
+
+	read DNSMASQ_IP4RANGE
+	# todo: input validation
+	[ -z "${DNSMASQ_IP4RANGE}" ] && DNSMASQ_IP4RANGE="${_default}"
+
+	_default="${DNSMASQ_GW4}"
+	printf "${N1_COLOR}Please set GW4, e.g.: ${N2_COLOR}${_default}: ${N0_COLOR}"
+	read DNSMASQ_GW4
+	# todo: input validation
+	[ -z "${DNSMASQ_GW4}" ] && DNSMASQ_GW4="${_default}"
+
+	_default="${DNSMASQ_NS1}"
+	${ECHO} "${N1_COLOR}Please set primary nameserver (NS1) for DHCP, '0' to disable or IPv4${N0_COLOR}"
+	printf "${N1_COLOR}e.g.: ${N2_COLOR}${_default}${N1_COLOR}: ${N0_COLOR}"
+
+	read DNSMASQ_NS1
+	# todo: input validation
+	[ -z "${DNSMASQ_NS1}" ] && DNSMASQ_NS1="${_default}"
+
+	if [ "${DNSMASQ_NS1}" = "0" ]; then
+		DNSMASQ_NS2="0"
+	else
+		_default="${DNSMASQ_NS2}"
+		${ECHO} "${N1_COLOR}Please set secondary nameserver (NS2) for DHCP, '0' to disable or IPv4${N0_COLOR}"
+		printf "${N1_COLOR}e.g.: ${N2_COLOR}${_default}${N1_COLOR}: ${N0_COLOR}"
+		read DNSMASQ_NS2
+		# todo: input validation
+		[ -z "${DNSMASQ_NS2}" ] && DNSMASQ_NS2="${_default}"
+	fi
+
+	# update forms
+	export H_GW4="${DNSMASQ_GW4}"
+	export H_NS1="${DNSMASQ_NS1}"
+	export H_NS2="${DNSMASQ_NS2}"
+	export H_IP4RANGE="${DNSMASQ_IP4RANGE}"
+	export H_NFSNET="${DNSMASQ_NFSNET}"
+
+	forms module=dnsmasq jname=${jname} inter=0 updcol=cur
+
+	return 0
+}
