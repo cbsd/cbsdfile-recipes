@@ -3,8 +3,6 @@ quiet=0
 
 jail_dnsmasq()
 {
-	forms="dnsmasq"
-
 	ip4_addr="DHCP"
 	host_hostname="${jname}.my.domain"
 	ver="native"
@@ -41,12 +39,6 @@ jail_dnsmasq()
 	#	H_GW4="172.16.0.1" \
 	#	H_IP4RANGE="172.16.0.40,172.16.0.199,12h" \
 	#	H_NFSNET="0"
-}
-
-preup_dnsmasq()
-{
-	# forms-based module, install it first
-	module mode=install forms-dnsmasq
 }
 
 postcreate_dnsmasq()
