@@ -1,6 +1,12 @@
 # Install dnsmasq/DHCP server for diskless/bootp
 quiet=0
 
+preup_dnsmasq()
+{
+	# forms-based module, install it first
+	module mode=install forms-dnsmasq
+}
+
 jail_dnsmasq()
 {
 	ip4_addr="DHCP"
