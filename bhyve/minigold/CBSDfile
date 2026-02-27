@@ -1,8 +1,13 @@
-bhyve_minikube()
+preup_minigold()
+{
+	${ECHO} "${W1_COLOR}Note: This CBSDfile controls the route for 192.168.49.0/24 network${N2_COLOR}"
+}
+
+bhyve_minigold()
 {
 	vm_ram="8g"
 	vm_cpus="4"
-	imgsize="40g"
+	imgsize="6g"
 	vm_os_type="linux"
 	vm_os_profile="cloud-Debian-13-x86_64"
 
@@ -14,16 +19,17 @@ bhyve_minikube()
 	ci_fqdn="${fqdn}"
 	ci_ip4_addr="${ip4_addr}"
 	ci_gw4="${ip4_gw}"
-	imgtype="zvol"
+	imgtype="md"
 	runasap=1
 	ssh_wait=1
 }
 
 
-postcreate_minikube()
+postcreate_minigold()
 {
+	set +o xtrace
+
 	bexec <<EOF
-df -m / > before.txt
 export DEBIAN_FRONTEND="noninteractive"
 sudo apt-get update
 #
@@ -59,36 +65,39 @@ TEE_EOF
 
 sudo systemctl daemon-reload
 sudo systemctl enable minikube.service
-#sudo systemctl start minikube.service
 
 rm -rf .minikube/cache
-
+sudo rm -rf /var/lib/cloud
+df -h /
 minikube status
-minikube ip
-
-df -m / > after.txt
-
-
 EOF
+
 	ip4_addr=$( bget jname=${jname} mode=quiet ip4_addr )
 
+	set -o xtrace
 	bscp verbose=0 ${jname}:.kube/config kubeconfig
+	${ROUTE_CMD} delete 192.168.49.0/24 || true
+	${ROUTE_CMD} add 192.168.49.0/24 ${ip4_addr}
+	set +o xtrace
 
-	echo "Minikube comes with a convenient graphical interface for managing resources via a browser."
-	echo "Use: minikube dashboard"
-	echo "To download and install dashboard.  If you're working in a terminal without a graphical interface, "
-	echo "use minikube dashboard --url to get the link manually."
-	echo
-	${ECHO} "Don't forget to add route for 192.168.49.0/24 to ${ip4_addr}: ${N2_COLOR}/sbin/route add 192.168.49.0/24 ${ip4_addr}"
-	echo
-	${ECHO} "${N2_COLOR}kubectl get pods -A ${H2_COLOR}--kubeconfig=${CIX_PWD}/kubeconfig${N0_COLOR}"
+	kubectl get pods -A --kubeconfig=${CIX_PWD}/kubeconfig
+	_ret=$?
 
-	echo "hint: local PV:"
-	echo "cbsd blogin"
-	echo "minikube ssh"
-	echo "sudo mkdir -p /mnt/data"
-	echo "sudo chmod 777 /mnt/data"
-	echo "exit"
-	${ECHO} "kubectl apply -f pv.yaml ${H2_COLOR}--kubeconfig=${CIX_PWD}/kubeconfig${N0_COLOR}"
+	${ROUTE_CMD} delete 192.168.49.0/24 || true
+
+	bstop jname=${jname}
+
+	if [ ${_ret} -ne 0 ]; then
+		${ECHO} "${W1_COLOR}${CIX_APP} tests failed: ${N2_COLOR}kubectl get pods -A --kubeconfig=${CIX_PWD}/kubeconfig${N0_COLOR}"
+		exit ${_ret}
+	fi
+
+	echo
+	${DU_CMD} -sh ~cbsd/jails-data/minigold-data/dsk1.vhd
+	echo
+
+	${ECHO} "${N2_COLOR}Copy the disk ${H2_COLOR}~cbsd/jails-data/${jname}-data/dsk1.vhd ${N2_COLOR}into ~cbsd/src/iso, e.g.:${N0_COLOR}"
+	${ECHO} "${H2_COLOR}${CP_CMD} -a ~cbsd/jails-data/${jname}-data/dsk1.vhd ~cbsd/src/iso/cbsd-cloud-Minikube-x86-1.0.raw${N0_COLOR}"
+	${ECHO} "${W1_COLOR}Info: ${N1_COLOR}Make sure you don't have a file and cbsd-cloud-Minikube-x86-1.0.raw ZOVL (${N2_COLOR}zfs list | grep cbsd-cloud-Minikube-x86-1.0.raw${N1_COLOR}) from a previous installation.${N0_COLOR}"
+	echo
 }
-
