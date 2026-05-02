@@ -50,7 +50,8 @@ After=docker.service
 [Service]
 Type=simple
 User=debian
-ExecStart=/usr/bin/minikube start --driver=docker --embed-certs
+#ExecStart=/usr/bin/minikube start --driver=docker --embed-certs
+ExecStart=/usr/bin/minikube start --driver=docker --embed-certs --cpus=2 --memory=4g --addons=ingress
 Restart=on-failure
 
 [Install]
@@ -70,6 +71,7 @@ df -m / > after.txt
 
 
 EOF
+	set +o xtrace
 	ip4_addr=$( bget jname=${jname} mode=quiet ip4_addr )
 
 	bscp verbose=0 ${jname}:.kube/config kubeconfig
@@ -90,5 +92,10 @@ EOF
 	echo "sudo chmod 777 /mnt/data"
 	echo "exit"
 	${ECHO} "kubectl apply -f pv.yaml ${H2_COLOR}--kubeconfig=${CIX_PWD}/kubeconfig${N0_COLOR}"
-}
 
+	echo "hint: for global kubeconfig:"
+	echo "  mkdir -p ~/.kube"
+	echo "  cp -a kubeconfig ~/.kube/config"
+	echo "  chmod 0400 ~/.kube/config"
+	echo
+}
